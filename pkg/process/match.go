@@ -76,7 +76,7 @@ func match(pats, txts, ins, outs [][]byte, cb Callback) (postins, postouts [][]b
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("match callback failed: %s", r)
+			err = fmt.Errorf("match callback failed: %v", r)
 			if rerr, ok := r.(error); ok {
 				err = fmt.Errorf("match callback failed: %w", rerr)
 			}
