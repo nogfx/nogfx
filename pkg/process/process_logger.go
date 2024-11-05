@@ -18,7 +18,7 @@ func LogProcessor(dir, filename string) (Processor, error) {
 
 	file, err := os.Create(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create log file %q: %s", path, err)
+		return nil, fmt.Errorf("failed to create log file %q: %w", path, err)
 	}
 
 	return func(ins, outs [][]byte) ([][]byte, [][]byte, error) {
