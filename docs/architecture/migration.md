@@ -1,13 +1,6 @@
-# Target architecture migration
+# Architecture migration (historical)
 
-Tracks execution of the package-layout and pipeline-model refactor described in [`target-architecture.md`](target-architecture.md). Each step below corresponds to a phase of that work.
-
-## Update protocol
-
-- Update a step's **Status** when work on it starts and when it lands.
-- When a step lands as a PR, link the PR under that step.
-- When a step uncovers a decision, surprise, or deviation from the target architecture, capture it under **Notes**. If a deviation should persist, also update `target-architecture.md` so the target document continues to reflect the intended end state.
-- Steps should land in order. Step 1 in particular is a prerequisite for every later step — until the new processor signature is in place, every package move triggers a signature conflict.
+Records the package-layout and pipeline-model refactor that produced the current architecture described in [`overview.md`](overview.md). All steps below have landed; this file is preserved for the decision-trail and notes captured during the work. The "Status" lines reflect the final state; the "Notes" sections retain the design choices and surprises that shaped each step.
 
 ## Step 1 — Batch, Events, Commands, and processor rewrite
 

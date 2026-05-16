@@ -1,8 +1,6 @@
 # Architecture
 
-How the code is organised, how the pieces fit together, and the operational workflow for building and testing.
+How the code is organised, how the pieces fit together, and how it got there.
 
-- [`overview.md`](overview.md) — Engine/Client/UI/Processor split and the world-processor pattern (current state).
-- [`build-and-test.md`](build-and-test.md) — commands, mock generation, and the gotchas that show up when a fresh checkout doesn't build.
-
-The plan for where the architecture is heading lives in [`../plans/target-architecture.md`](../plans/target-architecture.md) and stays there until it's executed and folded into this directory.
+- [`overview.md`](overview.md) — package layout, the events-and-commands data flow, the Connection and UI ports, processor sources and phases, dependency direction.
+- [`migration.md`](migration.md) — historical record of the migration that produced the current architecture: what landed at each step, the decisions made along the way, and the features that needed redesign rather than mechanical conversion.
