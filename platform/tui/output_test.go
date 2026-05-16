@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/tobiassjosten/nogfx/pkg/mock"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
@@ -134,7 +133,7 @@ func TestRenderOutput(t *testing.T) {
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
-			tui := NewTUI(&mock.ScreenMock{
+			tui := NewTUI(&ScreenMock{
 				HideCursorFunc:     func() {},
 				SetCursorStyleFunc: func(_ tcell.CursorStyle) {},
 				SetStyleFunc:       func(_ tcell.Style) {},

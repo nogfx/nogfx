@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/pkg/mock"
 	uipkg "github.com/tobiassjosten/nogfx/ui"
 )
 
@@ -360,7 +359,7 @@ func TestHandleEvent(t *testing.T) {
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
-			screen := &mock.ScreenMock{
+			screen := &ScreenMock{
 				SetCursorStyleFunc: func(_ tcell.CursorStyle) {},
 				SetStyleFunc:       func(_ tcell.Style) {},
 			}

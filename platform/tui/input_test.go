@@ -5,7 +5,6 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/tobiassjosten/nogfx/pkg/mock"
 )
 
 func TestRenderInput(t *testing.T) {
@@ -146,7 +145,7 @@ func TestRenderInput(t *testing.T) {
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
-			tui := NewTUI(&mock.ScreenMock{
+			tui := NewTUI(&ScreenMock{
 				HideCursorFunc:     func() {},
 				SetCursorStyleFunc: func(_ tcell.CursorStyle) {},
 				SetStyleFunc:       func(_ tcell.Style) {},
@@ -170,7 +169,7 @@ func TestRenderInput(t *testing.T) {
 
 func TestMasking(t *testing.T) {
 	width, height := 5, 1
-	tui := NewTUI(&mock.ScreenMock{
+	tui := NewTUI(&ScreenMock{
 		HideCursorFunc:     func() {},
 		SetCursorStyleFunc: func(_ tcell.CursorStyle) {},
 		SetStyleFunc:       func(_ tcell.Style) {},

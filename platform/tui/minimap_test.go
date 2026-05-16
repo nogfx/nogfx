@@ -10,12 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/tobiassjosten/nogfx/lib/navigation"
-	"github.com/tobiassjosten/nogfx/pkg/mock"
 	uipkg "github.com/tobiassjosten/nogfx/ui"
 )
 
 func TestRenderTUIMap(t *testing.T) {
-	ui := NewTUI(&mock.ScreenMock{
+	ui := NewTUI(&ScreenMock{
 		HideCursorFunc:     func() {},
 		SetCursorStyleFunc: func(_ tcell.CursorStyle) {},
 		SetStyleFunc:       func(_ tcell.Style) {},
