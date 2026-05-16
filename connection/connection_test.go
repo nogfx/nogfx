@@ -1,0 +1,39 @@
+package connection_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/tobiassjosten/nogfx/app"
+	"github.com/tobiassjosten/nogfx/connection"
+)
+
+// TestEventsSatisfyAppEvent guards against accidentally dropping the
+// EventMarker embed on a concrete event type.
+func TestEventsSatisfyAppEvent(t *testing.T) {
+	var _ app.Event = connection.TextLine{}
+	var _ app.Event = connection.Prompt{}
+	var _ app.Event = connection.TelnetCommand{}
+	var _ app.Event = connection.GMCPFrame{}
+	var _ app.Event = connection.StateChanged{}
+}
+
+// TestCommandsSatisfyAppCommand guards against accidentally dropping the
+// CommandMarker embed on a concrete command type.
+func TestCommandsSatisfyAppCommand(t *testing.T) {
+	var _ app.Command = connection.Send{}
+	var _ app.Command = connection.Reconnect{}
+	var _ app.Command = connection.Disconnect{}
+}
+
+func TestEventPayloads(t *testing.T) {
+	assert.Equal(t, []byte("hello"), connection.TextLine{Bytes: []byte("hello")}.Bytes)
+	assert.Equal(t, []byte("hi"), connection.Prompt{Bytes: []byte("hi")}.Bytes)
+	assert.True(t, connection.StateChanged{Connected: true}.Connected)
+}
+
+func TestSendCommand(t *testing.T) {
+	send := connection.Send{Bytes: []byte("kick orc")}
+	assert.Equal(t, []byte("kick orc"), send.Bytes)
+}

@@ -1,123 +1,253 @@
 package pkg_test
 
 import (
+	"context"
 	"errors"
-	"fmt"
+	"sync"
 	"testing"
-
-	"github.com/tobiassjosten/nogfx/pkg"
-	"github.com/tobiassjosten/nogfx/pkg/mock"
-	"github.com/tobiassjosten/nogfx/pkg/telnet"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/tobiassjosten/nogfx/app"
+	"github.com/tobiassjosten/nogfx/connection"
+	"github.com/tobiassjosten/nogfx/pkg"
+	"github.com/tobiassjosten/nogfx/ui"
 )
 
-// Verify interface fulfilments.
-var _ pkg.Conn = &telnet.NVT{}
+// fakeConn is a Connection that emits a configurable script of events and
+// records every command Apply receives.
+type fakeConn struct {
+	emit []app.Event
 
-var (
-	gmcpPrefix = []byte{telnet.IAC, telnet.SB, telnet.GMCP}
-	gmcpSuffix = []byte{telnet.IAC, telnet.SE}
-	willGMCP   = []byte{telnet.IAC, telnet.Will, telnet.GMCP}
-	willEcho   = []byte{telnet.IAC, telnet.Will, telnet.Echo}
-	wontEcho   = []byte{telnet.IAC, telnet.Wont, telnet.Echo}
-)
-
-func wrapGMCP(msgs []string) []byte {
-	var bs []byte
-	for _, msg := range msgs {
-		bs = append(bs, gmcpPrefix...)
-		bs = append(bs, []byte(msg)...)
-		bs = append(bs, gmcpSuffix...)
-	}
-	return bs
+	mu       sync.Mutex
+	applied  []app.Command
+	sendBack chan struct{}
 }
 
-func TestCommandsReply(t *testing.T) {
-	tcs := []struct {
-		command []byte
-		sent    []byte
-		errs    []bool
-		err     string
-	}{
-		{
-			command: willGMCP,
-			sent: wrapGMCP([]string{
-				`Core.Hello {"client":"nogfx","version":"0.0.0"}`,
-			}),
-		},
-		{
-			command: []byte{telnet.IAC, telnet.WILL, telnet.GMCP},
-			errs:    []bool{true},
-			err:     "failed GMCP: ooops",
-		},
+func newFakeConn(emit ...app.Event) *fakeConn {
+	return &fakeConn{emit: emit, sendBack: make(chan struct{}, 1)}
+}
+
+func (c *fakeConn) Run(ctx context.Context, events chan<- app.Event) error {
+	for _, ev := range c.emit {
+		select {
+		case <-ctx.Done():
+			return nil
+		case events <- ev:
+		}
+	}
+	<-ctx.Done()
+	return nil
+}
+
+func (c *fakeConn) Apply(cmd app.Command) error {
+	switch cmd.(type) {
+	case connection.Send, connection.Reconnect, connection.Disconnect:
+		c.mu.Lock()
+		c.applied = append(c.applied, cmd)
+		c.mu.Unlock()
+		select {
+		case c.sendBack <- struct{}{}:
+		default:
+		}
+		return nil
+	}
+	return app.ErrCommandNotApplicable
+}
+
+func (c *fakeConn) Applied() []app.Command {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]app.Command{}, c.applied...)
+}
+
+// fakeUI mirrors fakeConn for the UI side.
+type fakeUI struct {
+	emit []app.Event
+
+	mu       sync.Mutex
+	applied  []app.Command
+	sendBack chan struct{}
+}
+
+func newFakeUI(emit ...app.Event) *fakeUI {
+	return &fakeUI{emit: emit, sendBack: make(chan struct{}, 1)}
+}
+
+func (u *fakeUI) Run(ctx context.Context, events chan<- app.Event) error {
+	for _, ev := range u.emit {
+		select {
+		case <-ctx.Done():
+			return nil
+		case events <- ev:
+		}
+	}
+	<-ctx.Done()
+	return nil
+}
+
+func (u *fakeUI) Apply(cmd app.Command) error {
+	switch cmd.(type) {
+	case ui.PrintLine, ui.SetHealth, ui.SetMana, ui.AddVital, ui.SetVital,
+		ui.RemoveVital, ui.SetCharacter, ui.SetTarget, ui.SetRoom,
+		ui.MaskInput, ui.UnmaskInput:
+		u.mu.Lock()
+		u.applied = append(u.applied, cmd)
+		u.mu.Unlock()
+		select {
+		case u.sendBack <- struct{}{}:
+		default:
+		}
+		return nil
+	}
+	return app.ErrCommandNotApplicable
+}
+
+func (u *fakeUI) Applied() []app.Command {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return append([]app.Command{}, u.applied...)
+}
+
+// runEngine starts an engine, lets it process some events, and stops it.
+func runEngine(t *testing.T, conn *fakeConn, gui *fakeUI, proc app.Processor, expectN int) {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		e := &pkg.Engine{
+			Connection: conn,
+			UI:         gui,
+			Processor:  proc,
+		}
+		done <- e.Run(ctx)
+	}()
+
+	// Wait for the expected number of Apply calls, with a short timeout.
+	deadline := time.After(time.Second)
+	got := 0
+	for got < expectN {
+		select {
+		case <-conn.sendBack:
+			got++
+		case <-gui.sendBack:
+			got++
+		case <-deadline:
+			t.Fatalf("timed out waiting for Apply calls: got %d/%d", got, expectN)
+		}
 	}
 
-	for i, tc := range tcs {
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
-			var calls int
-			var sent []byte
-
-			client := &mock.ClientMock{
-				WriteFunc: func(data []byte) (int, error) {
-					defer func() { calls++ }()
-					if len(tc.errs) > calls && tc.errs[calls] {
-						return 0, errors.New("ooops")
-					}
-
-					sent = append(sent, data...)
-
-					return len(data), nil
-				},
-			}
-
-			ui := &mock.UIMock{}
-
-			engine := pkg.NewEngine(client, ui, "example.com:1337")
-
-			err := engine.ProcessCommand(tc.command)
-
-			if tc.err != "" && assert.NotNil(t, err) {
-				assert.Equal(t, tc.err, err.Error())
-				return
-			}
-
-			require.Nil(t, err)
-
-			if len(tc.sent) > 0 {
-				assert.Equal(t, tc.sent, sent, string(sent))
-			}
-		})
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("engine did not shut down")
 	}
 }
 
-func TestMasking(t *testing.T) {
-	assert := assert.New(t)
-	require := require.New(t)
+func TestEngine_RoutesConnectionCommandsToConnection(t *testing.T) {
+	conn := newFakeConn()
+	gui := newFakeUI(ui.Input{Bytes: []byte("hello")})
 
-	client := &mock.ClientMock{}
-
-	var masked bool
-
-	ui := &mock.UIMock{
-		MaskInputFunc: func() {
-			masked = true
-		},
-		UnmaskInputFunc: func() {
-			masked = false
-		},
+	// A processor that turns ui.Input into a connection.Send.
+	proc := func(b app.Batch) (app.Batch, error) {
+		for _, ev := range b.Events {
+			if in, ok := ev.(ui.Input); ok {
+				b = b.AppendCommand(connection.Send{Bytes: in.Bytes})
+			}
+		}
+		return b, nil
 	}
 
-	engine := pkg.NewEngine(client, ui, "example.com:1337")
+	runEngine(t, conn, gui, proc, 1)
 
-	err := engine.ProcessCommand(willEcho)
-	require.Nil(err)
+	require.Len(t, conn.Applied(), 1)
+	assert.Equal(t, []byte("hello"), conn.Applied()[0].(connection.Send).Bytes)
+	assert.Empty(t, gui.Applied(), "connection commands must not reach the UI")
+}
 
-	assert.Equal(true, masked)
+func TestEngine_RoutesUICommandsToUI(t *testing.T) {
+	conn := newFakeConn(connection.TextLine{Bytes: []byte("server says hi")})
+	gui := newFakeUI()
 
-	err = engine.ProcessCommand(wontEcho)
-	require.Nil(err)
+	proc := func(b app.Batch) (app.Batch, error) {
+		for _, ev := range b.Events {
+			if tl, ok := ev.(connection.TextLine); ok {
+				b = b.AppendCommand(ui.PrintLine{Text: tl.Bytes})
+			}
+		}
+		return b, nil
+	}
 
-	assert.Equal(false, masked)
+	runEngine(t, conn, gui, proc, 1)
+
+	require.Len(t, gui.Applied(), 1)
+	assert.Equal(t, []byte("server says hi"), gui.Applied()[0].(ui.PrintLine).Text)
+	assert.Empty(t, conn.Applied(), "UI commands must not reach the connection")
+}
+
+func TestEngine_UnknownCommandIsLoggedNotPanic(t *testing.T) {
+	// An unknown command shouldn't crash the engine.
+	type orphan struct {
+		app.CommandMarker
+	}
+
+	conn := newFakeConn(connection.TextLine{Bytes: []byte("trigger")})
+	gui := newFakeUI()
+
+	emitOrphan := false
+	proc := func(b app.Batch) (app.Batch, error) {
+		if !emitOrphan {
+			emitOrphan = true
+			return b.AppendCommand(orphan{}), nil
+		}
+		return b, nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		e := &pkg.Engine{Connection: conn, UI: gui, Processor: proc}
+		done <- e.Run(ctx)
+	}()
+
+	// Give the engine time to process the event.
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("engine did not shut down")
+	}
+
+	assert.Empty(t, conn.Applied())
+	assert.Empty(t, gui.Applied())
+}
+
+// fakeFailingConn returns an error from Run; the engine should propagate it.
+type fakeFailingConn struct {
+	err error
+}
+
+func (f *fakeFailingConn) Run(ctx context.Context, events chan<- app.Event) error {
+	return f.err
+}
+func (f *fakeFailingConn) Apply(cmd app.Command) error { return app.ErrCommandNotApplicable }
+
+func TestEngine_PropagatesConnectionError(t *testing.T) {
+	boom := errors.New("transport gone")
+	conn := &fakeFailingConn{err: boom}
+	gui := newFakeUI()
+
+	e := &pkg.Engine{Connection: conn, UI: gui, Processor: nil}
+	err := e.Run(context.Background())
+	assert.ErrorIs(t, err, boom)
 }

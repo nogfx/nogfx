@@ -1,6 +1,8 @@
 ---
 builds:
-  - env:
+  - main: ./cmd/nogfx
+    binary: nogfx
+    env:
       - CGO_ENABLED=0
     goos:
       - darwin

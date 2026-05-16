@@ -1,14 +1,19 @@
-.PHONY: all
-all: pkg/mock/pkg_client.go pkg/mock/pkg_processor.go pkg/mock/pkg_ui.go pkg/mock/tcell_screen.go
+.PHONY: all build test mocks
 
-pkg/mock/pkg_client.go: pkg/services.go
-	~/go/bin/moq -pkg mock pkg/ Client:ClientMock > pkg/mock/pkg_client.go
+all: build test
 
-pkg/mock/pkg_processor.go: pkg/procs.go
-	~/go/bin/moq -pkg mock pkg/ Processor:ProcessorMock > pkg/mock/pkg_processor.go
+build:
+	go build ./...
 
-pkg/mock/pkg_ui.go: pkg/services.go
-	~/go/bin/moq -pkg mock pkg/ UI:UIMock > pkg/mock/pkg_ui.go
+test:
+	go test ./...
 
-pkg/mock/tcell_screen.go: pkg/services.go
+# mocks regenerates the tcell.Screen mock. The pkg.Client/UI/Processor mocks
+# the in-flight refactor used to regenerate referenced types that have since
+# been retired; those targets will be reintroduced (against the new
+# connection.Connection and ui.UI ports) once step 3 of the target-arch
+# migration lands the port interfaces. See docs/plans/target-migration.md.
+mocks: pkg/mock/tcell_screen.go
+
+pkg/mock/tcell_screen.go: go.mod
 	~/go/bin/moq -pkg mock ~/go/pkg/mod/github.com/gdamore/tcell/v2@v2.5.1/ Screen:ScreenMock > pkg/mock/tcell_screen.go
