@@ -4,44 +4,51 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tobiassjosten/nogfx/pkg"
+	"golang.org/x/exp/slices"
+
+	"github.com/tobiassjosten/nogfx/lib/navigation"
 	"github.com/tobiassjosten/nogfx/platform/gmcp"
 	agmcp "github.com/tobiassjosten/nogfx/platform/gmcp/achaea"
 	igmcp "github.com/tobiassjosten/nogfx/platform/gmcp/ironrealms"
-	"github.com/tobiassjosten/nogfx/lib/navigation"
 	"github.com/tobiassjosten/nogfx/ui"
 )
 
 // Target represents who or what is being targeted for skills and attacks.
+// It owns both the displayable state (Name, Health) and the auto-retarget
+// machinery (candidates / present lists), so a change in the room can
+// pick a new target without external coordination.
 type Target struct {
-	*pkg.Target
+	Name   string
+	Health int
+
+	// candidates lists the names of potential auto-target NPCs in
+	// descending priority (most dangerous first). Updated when the
+	// player enters a new area.
+	candidates []string
+
+	// present lists the NPC entries currently in the room. The overlap
+	// between this and candidates is what drives auto-target selection.
+	present []string
+
 	isPlayer bool
 	area     *navigation.Area
 
-	// pendingSends accumulates byte sequences that should be emitted as
-	// connection.Send commands the next time the world's processor drains
-	// the target. This is the transitional replacement for the old
-	// client.Send call from inside Set; once auto-retarget is reworked to
-	// flow through the batch directly the field can go away.
+	// pendingSends accumulates "settarget …" byte sequences produced by
+	// auto-retargeting. They are drained by the world's processor into
+	// connection.Send commands so the engine routes them to the wire.
 	pendingSends [][]byte
 }
 
-// NewTarget creates a new target object.
+// NewTarget creates a new target with Health initialised to -1 (unknown).
 func NewTarget() *Target {
-	target := &Target{}
-	target.Target = pkg.NewTarget(target.Set)
-	return target
-}
-
-// PkgTarget converts our game-specific Target to the general pkg struct.
-func (tgt *Target) PkgTarget() *pkg.Target {
-	return tgt.Target
+	return &Target{Health: -1}
 }
 
 // SetTargetCommand returns a ui.SetTarget command reflecting the current
-// target, suitable for appending to a batch.
+// target, suitable for appending to a batch. A nil Target clears the UI's
+// current target.
 func (tgt *Target) SetTargetCommand() ui.SetTarget {
-	if tgt.Target == nil || tgt.Name == "" {
+	if tgt.Name == "" {
 		return ui.SetTarget{Target: nil}
 	}
 	queue := tgt.Queue() - 1
@@ -63,19 +70,121 @@ func (tgt *Target) DrainSends() [][]byte {
 	return sends
 }
 
-// Set records a desired target change. The actual settarget command is
-// queued via DrainSends; the world's processor flushes it onto the batch.
-func (tgt *Target) Set(name string, _ *pkg.Target) {
+// queueSet queues a "settarget X" command (or "settarget none" for an
+// empty name) so the engine can write it to the wire on the next pass.
+// Duplicate consecutive sends for the same target are coalesced — a real
+// concern, since Name itself is only updated when the server confirms via
+// IRETargetSet, so without dedupe two retarget calls in the same batch
+// would each queue the same command.
+//
+// Player targets are left alone — they are set manually.
+func (tgt *Target) queueSet(name string) {
+	if name == tgt.Name {
+		return
+	}
 	if tgt.isPlayer {
 		return
 	}
 
+	var bytes []byte
 	if name == "" {
-		tgt.pendingSends = append(tgt.pendingSends, []byte("settarget none"))
+		bytes = []byte("settarget none")
+	} else {
+		bytes = []byte("settarget " + name)
+	}
+
+	if n := len(tgt.pendingSends); n > 0 && string(tgt.pendingSends[n-1]) == string(bytes) {
+		return
+	}
+	tgt.pendingSends = append(tgt.pendingSends, bytes)
+}
+
+// SetCandidates replaces the list of auto-targetable NPCs. If the current
+// target is no longer a candidate, it is cleared; otherwise the auto-target
+// logic re-runs against the new list.
+func (tgt *Target) SetCandidates(names []string) {
+	oldCandidates := tgt.candidates
+	tgt.candidates = names
+
+	wasCandidate := slices.Contains(oldCandidates, tgt.Name)
+	stillCandidate := slices.Contains(tgt.candidates, tgt.Name)
+
+	if wasCandidate && !stillCandidate {
+		tgt.queueSet("")
 		return
 	}
 
-	tgt.pendingSends = append(tgt.pendingSends, []byte("settarget "+name))
+	tgt.retarget()
+}
+
+// SetPresent replaces the list of entities in the room. Auto-targeting
+// re-runs after the update.
+func (tgt *Target) SetPresent(names []string) {
+	tgt.present = names
+	tgt.retarget()
+}
+
+// AddPresent records that an entity has entered the room. Auto-targeting
+// re-runs after the update.
+func (tgt *Target) AddPresent(name string) {
+	tgt.present = append(tgt.present, name)
+	tgt.retarget()
+}
+
+// RemovePresent records that an entity has left the room. Auto-targeting
+// re-runs after the update.
+func (tgt *Target) RemovePresent(name string) {
+	if i := slices.Index(tgt.present, name); i >= 0 {
+		tgt.present = append(tgt.present[:i], tgt.present[i+1:]...)
+		tgt.retarget()
+	}
+}
+
+// Queue counts how many valid targets are present in the room, including
+// the current one.
+func (tgt *Target) Queue() int {
+	queue := 0
+	for _, present := range tgt.present {
+		if tgt.Name != "" && strings.Contains(present, tgt.Name) {
+			queue++
+			continue
+		}
+		for _, candidate := range tgt.candidates {
+			if strings.Contains(present, candidate) {
+				queue++
+				break
+			}
+		}
+	}
+	return queue
+}
+
+// retarget picks the most-prioritised candidate present in the room and
+// switches to it if it differs from the current target.
+func (tgt *Target) retarget() {
+	if tgt.Name != "" && !slices.Contains(tgt.candidates, tgt.Name) {
+		return
+	}
+
+	var newTarget string
+
+outer:
+	for _, candidate := range tgt.candidates {
+		for _, present := range tgt.present {
+			if strings.Contains(present, candidate) {
+				newTarget = candidate
+				break outer
+			}
+		}
+	}
+
+	if newTarget != "" && newTarget != tgt.Name {
+		tgt.queueSet(newTarget)
+		// Name itself is not updated here — the server confirms the
+		// change through IRETargetSet and FromIRETargetSet writes
+		// the new name into state. That keeps the displayed target
+		// consistent with what the server believes.
+	}
 }
 
 // FromRoomInfo handles targeting when moving between rooms (areas, in effect).
@@ -91,7 +200,7 @@ func (tgt *Target) FromRoomInfo(msg *gmcp.RoomInfo) {
 	tgt.area = room.Area
 
 	npcs := tgt.npcs()[room.Area.ID]
-	tgt.Target.SetCandidates(npcs)
+	tgt.SetCandidates(npcs)
 }
 
 // FromCharItemsList builds the list of NPCs in the room and retargets.
@@ -104,7 +213,7 @@ func (tgt *Target) FromCharItemsList(msg *gmcp.CharItemsList) {
 	for _, item := range msg.Items {
 		present = append(present, item.Name)
 	}
-	tgt.Target.SetPresent(present)
+	tgt.SetPresent(present)
 }
 
 // FromCharItemsAdd adds an NPC to the room list and retargets.
@@ -113,7 +222,7 @@ func (tgt *Target) FromCharItemsAdd(msg *gmcp.CharItemsAdd) {
 		return
 	}
 
-	tgt.Target.AddPresent(msg.Item.Name)
+	tgt.AddPresent(msg.Item.Name)
 }
 
 // FromCharItemsRemove removes an NPC to the room list and retargets.
@@ -127,15 +236,15 @@ func (tgt *Target) FromCharItemsRemove(msg *gmcp.CharItemsRemove) {
 	// When a NPC dies its name goes from "x" to "the corpse of x" without
 	// triggering a Char.Items.Update, so we handle that here.
 	// @todo When we don't kill and autograb the corpse, it won't leave the
-	// room and thus remain an eligible  target. Fix this.
+	// room and thus remain an eligible target. Fix this.
 	if msg.Item.Attributes.Dead {
 		name = strings.TrimPrefix(name, "the corpse of ")
 	}
 
-	tgt.Target.RemovePresent(name)
+	tgt.RemovePresent(name)
 }
 
-// FromCharStatus updates the current target.
+// FromCharStatus updates the current target from a Char.Status GMCP message.
 func (tgt *Target) FromCharStatus(msg *agmcp.CharStatus) {
 	if msg.Target != nil {
 		tgt.Name = strings.ToLower(*msg.Target)
@@ -144,8 +253,8 @@ func (tgt *Target) FromCharStatus(msg *agmcp.CharStatus) {
 
 // FromIRETargetSet updates the player status of the current target.
 func (tgt *Target) FromIRETargetSet(msg *igmcp.IRETargetSet) {
-	// This message works so inconsistenyly that we can only rely
-	// on it for knowing that non-numbers equals a player.
+	// This message works so inconsistently that we can only rely on it
+	// for knowing that non-numbers equals a player.
 	if msg.Target != "" {
 		_, err := strconv.Atoi(msg.Target)
 		tgt.isPlayer = err != nil
