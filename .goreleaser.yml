@@ -9,7 +9,7 @@ builds:
       - linux
       - windows
     ldflags:
-      - -s -w -X pkg.Version={{ .Version }}
+      - -s -w -X main.Version={{ .Version }}
 
 brews:
   - name: nogfx

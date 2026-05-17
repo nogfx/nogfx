@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/pkg"
+	"github.com/nogfx/nogfx/engine"
 	"github.com/nogfx/nogfx/platform/telnet"
 	"github.com/nogfx/nogfx/platform/tui"
 	"github.com/nogfx/nogfx/processors"
@@ -38,7 +38,7 @@ func realMain() error {
 	}
 
 	f, err := os.OpenFile(
-		filepath.Join(pkg.Directory, "errors.log"),
+		filepath.Join(directory, "errors.log"),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600,
 	)
 	if err != nil {
@@ -102,7 +102,7 @@ func run(address string) error {
 	}
 
 	logProcessor, err := processors.LogProcessor(
-		filepath.Join(pkg.Directory, "logs"),
+		filepath.Join(directory, "logs"),
 		fmt.Sprintf(
 			"%s-%s.log",
 			strings.Split(address, ":")[0],
@@ -113,7 +113,7 @@ func run(address string) error {
 		return fmt.Errorf("failed to create log processor: %w", err)
 	}
 
-	engine := &pkg.Engine{
+	eng := &engine.Engine{
 		Connection: conn,
 		UI:         terminal,
 		Processor: app.Chain(
@@ -126,15 +126,15 @@ func run(address string) error {
 
 	switch address {
 	case "achaea.com:23", "50.31.100.8:23":
-		processor, err := achaea.Processor(filepath.Join(pkg.Directory, "logs"))
+		processor, err := achaea.Processor(filepath.Join(directory, "logs"))
 		if err != nil {
 			return fmt.Errorf("failed to create Achaea processor: %w", err)
 		}
 
-		engine.Processor = processor
+		eng.Processor = processor
 	}
 
-	return engine.Run(ctx)
+	return eng.Run(ctx)
 }
 
 func newTUI() (*tui.TUI, error) {

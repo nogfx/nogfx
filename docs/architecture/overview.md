@@ -25,37 +25,38 @@ nogfx/
   cmd/
     nogfx/
       main.go          — entry point; composition root only, no logic
+      env.go           — runtime config (nogfx home dir, version constant)
   app/                 — abstract pipeline core
     batch.go           — Batch {Events, Commands} envelope
     processor.go       — Processor signature + Chain composer
     event.go           — Event interface + EventMarker
     command.go         — Command interface + CommandMarker
-    engine.go          — pumps batches through the processor chain
   connection/          — contract for the network endpoint
     events.go          — TextLine, Prompt, TelnetCommand, GMCPFrame, StateChanged
     commands.go        — Send, Reconnect, Disconnect
-    connection.go      — Connection port (deferred until step 3)
+    connection.go      — Connection port interface
+    iac.go             — IAC byte sequences (WillEcho, WontEcho, WillGMCP)
   ui/                  — contract for the user-facing endpoint
     events.go          — Input, Resize
     commands.go        — PrintLine, SetHealth, SetMana, AddVital, SetVital,
                          RemoveVital, SetCharacter, SetTarget, SetRoom,
                          MaskInput, UnmaskInput
-    snapshots.go       — Target, Room (UI-facing snapshot types)
-    ui.go              — UI port (deferred until step 3)
+    snapshots.go       — Target snapshot
+    ui.go              — UI port interface
+  engine/              — pumps batches between endpoints
+    engine.go
   platform/            — substrate adapters; implement endpoint ports
-    telnet/            — Connection implementation; tokenisation; GMCP envelope
+    telnet/            — Connection implementation; tokenisation
     gmcp/              — typed GMCP messages (parse / marshal)
     tui/               — UI implementation (tcell)
   processors/          — generic, world-agnostic processors
   worlds/              — game-specific processor bundles
-    achaea/
-      gmcp/            — Achaea GMCP extensions
-      state/           — rich Character, Target, Area
-      features/        — Learning, TunnelVision, bashing, procs/
-      achaea.go        — composes generic + Achaea-specific processors
-  lib/                 — general-purpose libraries; no app/platform dependencies
+    achaea/            — Character, Target, Learning, TunnelVision, Bashing
+  lib/                 — general-purpose libraries; depend on nothing in-project
     simpex/            — pattern matching
     navigation/        — graph and pathfinding
+  internal/
+    architecture/      — dependency-rule test
 ```
 
 Dependency direction. These rules are enforced by [`internal/architecture/architecture_test.go`](../../internal/architecture/architecture_test.go), which classifies each package by path and verifies its imports against an allow-list. The categories below match the constants defined there.
@@ -69,7 +70,7 @@ Dependency direction. These rules are enforced by [`internal/architecture/archit
 | `endpoint` | `platform/telnet`, `platform/tui` | `app`, `contract`, `lib` |
 | `processors` | `processors` | `app`, `contract`, `lib`, `codec` |
 | `world` | `worlds/*` | `app`, `contract`, `lib`, `codec`, `processors` |
-| `runtime` | `pkg` | `app`, `contract`, `lib` |
+| `engine` | `engine` | `app`, `contract`, `lib` |
 | `cmd` | `cmd/*` | everything (composition root) |
 
 Same-category imports are always allowed (e.g. `platform/gmcp/achaea` may import `platform/gmcp`).
@@ -80,8 +81,8 @@ Notes on what each rule expresses:
 - **Contracts (`connection`, `ui`) do not import each other.** Each endpoint's contract is independent, so adding a UI capability does not affect the connection package and vice versa.
 - **The codec (`platform/gmcp`) does not import an endpoint.** GMCP messages are pure data; the wire transport (telnet) is separate. Worlds and processors can decode GMCP without dragging in telnet.
 - **Endpoints do not import each other.** `platform/telnet` and `platform/tui` are siblings; if telnet ever needed to know about the UI it would mean we'd put logic in the wrong place.
-- **Worlds do not import endpoints or the runtime.** A world is just a `Processor` that runs against the contracts; it cannot reach down into a specific transport implementation or up into the engine wiring.
-- **The runtime (`pkg`) does not import endpoints.** The engine wires contracts together, not specific transports. `cmd/nogfx/main.go` is the only place that knows which endpoint implementations are in use.
+- **Worlds do not import endpoints or the engine.** A world is just a `Processor` that runs against the contracts; it cannot reach down into a specific transport implementation or up into the engine wiring.
+- **The engine does not import endpoints.** The engine wires contracts together, not specific transports. `cmd/nogfx/main.go` is the only place that knows which endpoint implementations are in use.
 - `worlds/*` imports `app/`, `connection/`, `ui/`, `platform/gmcp`, `processors/`, `lib/*`. Same reasoning as processors: a world emits both server commands (Send) and UI commands.
 - `cmd/nogfx/main.go` imports everything and wires it together.
 
