@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// SplitFunc looks looks for string termination based on negotiated options. By
+// SplitFunc looks for string termination based on negotiated options. By
 // default, newline and GA is used, but the latter can be negotiated.
 func (nvt *NVT) SplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
@@ -127,7 +127,7 @@ func (nvt *NVT) Write(data []byte) (int, error) {
 			nvt.options[ourside][data[i+2]] = StateEnabling
 		}
 
-		if bytes.Contains([]byte{Do, Dont, Will, Wont}, []byte{data[i+1]}) {
+		if bytes.IndexByte([]byte{Do, Dont, Will, Wont}, data[i+1]) >= 0 {
 			i += 2
 		}
 	}

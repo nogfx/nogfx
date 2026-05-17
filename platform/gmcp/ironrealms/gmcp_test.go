@@ -63,12 +63,12 @@ func TestParse(t *testing.T) {
 			msg, err := ironrealms.Parse([]byte(tc.data))
 
 			if tc.err != "" {
-				if assert.NotNil(t, err) {
+				if assert.Error(t, err) {
 					assert.Equal(t, tc.err, err.Error())
 				}
 				return
 			} else if err != nil {
-				assert.Equal(t, "", err.Error())
+				assert.Empty(t, err.Error())
 				return
 			}
 

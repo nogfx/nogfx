@@ -326,10 +326,10 @@ func (stats *CharVitalsStats) MarshalJSON() ([]byte, error) {
 		list = append(list, fmt.Sprintf("Karma: %d%%", *stats.Karma))
 	}
 	if stats.Spec != nil {
-		list = append(list, fmt.Sprintf("Spec: %s", *stats.Spec))
+		list = append(list, "Spec: "+*stats.Spec)
 	}
 	if stats.Stance != nil {
-		list = append(list, fmt.Sprintf("Stance: %s", *stats.Stance))
+		list = append(list, "Stance: "+*stats.Stance)
 	}
 
 	return json.Marshal(list)

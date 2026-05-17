@@ -73,7 +73,7 @@ func (tv TunnelVision) rewriteProcessor() app.Processor {
 			}
 		}
 
-		for i = 0; i < len(batch.Events); i++ {
+		for i = range batch.Events {
 			ev := batch.Events[i]
 			c := classes[i]
 
@@ -90,7 +90,11 @@ func (tv TunnelVision) rewriteProcessor() app.Processor {
 			case tvAttackModifier:
 				attacks = append(attacks, c.detail)
 
-			default:
+			case tvNone, tvCuring, tvCured:
+				// Curing/cured events are paired-suppressed earlier;
+				// anything that's still tvCuring/tvCured here is an
+				// unpaired straggler that passes through. tvNone is
+				// the default "no classification, pass through" case.
 				flush()
 				out = append(out, ev)
 			}

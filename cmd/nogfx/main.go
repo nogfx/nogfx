@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -24,8 +25,16 @@ import (
 )
 
 func main() {
+	if err := realMain(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// realMain is the real entry point. It exists so that deferred cleanups
+// (e.g. closing the error log) actually run; log.Fatal would skip defers.
+func realMain() error {
 	if len(os.Args) < 2 {
-		log.Fatal("usage: nogfx example.com:23")
+		return errors.New("usage: nogfx example.com:23")
 	}
 
 	f, err := os.OpenFile(
@@ -33,7 +42,7 @@ func main() {
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600,
 	)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer func() {
 		if cerr := f.Close(); cerr != nil {
@@ -44,12 +53,10 @@ func main() {
 
 	address, err := parseAddress(os.Args[1])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	if err := run(address); err != nil {
-		log.Fatal(err)
-	}
+	return run(address)
 }
 
 // parseAddress normalises a user-supplied server address into "host:port"
@@ -84,7 +91,7 @@ func parseAddress(address string) (string, error) {
 func run(address string) error {
 	ctx := context.Background()
 
-	conn, err := telnet.Dial(address)
+	conn, err := telnet.Dial(ctx, address)
 	if err != nil {
 		return err
 	}

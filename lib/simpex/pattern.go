@@ -6,7 +6,7 @@ import (
 
 // Match a text against a pattern to see if it matches. If it does, captured
 // matches are returned. If it doesn't, nil is returned.
-func Match(pattern []byte, text []byte) [][]byte {
+func Match(pattern, text []byte) [][]byte {
 	captures := [][]byte{}
 
 	var capture []byte

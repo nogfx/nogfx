@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-type ErrMock struct{}
+type MockError struct{}
 
-func (ErrMock) Error() string {
+func (MockError) Error() string {
 	return "mock error"
 }
 
-var errMock error = ErrMock{}
+var errMock error = MockError{}
 
 type mockAddr struct{}
 

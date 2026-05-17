@@ -310,7 +310,7 @@ func TestWrite(t *testing.T) {
 			client := telnet.NewNVT(conn)
 
 			_, err := client.Write(tc.clientWrite)
-			require.Nil(t, err, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tc.clientRead, conn.Written)
 		})

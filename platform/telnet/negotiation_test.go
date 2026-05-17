@@ -307,7 +307,7 @@ func TestNegotiate(t *testing.T) {
 			if tc.writeErr != nil {
 				require.ErrorIs(t, err, errMock)
 			} else {
-				require.Nil(t, err, err)
+				require.NoError(t, err)
 			}
 
 			assert.Equal(t, tc.clientInput, conn.Written)

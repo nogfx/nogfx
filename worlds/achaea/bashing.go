@@ -9,7 +9,8 @@ import (
 )
 
 var (
-	bashAttack     = []byte("queue addclear eqbal combo sdk ucp ucp")
+	// "ucp ucp" is intentional — the bash combo queues two uppercuts.
+	bashAttack     = []byte("queue addclear eqbal combo sdk ucp ucp") //nolint:dupword
 	bashClearEqbal = []byte("clearqueue eqbal")
 )
 

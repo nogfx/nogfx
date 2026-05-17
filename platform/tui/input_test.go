@@ -157,7 +157,7 @@ func TestRenderInput(t *testing.T) {
 
 			assert.Equal(t, tc.rows, rows.Strings())
 			if tc.cursorpos != nil {
-				assert.Equal(t, tc.cursorpos, []int{cx, cy})
+				assert.Equal(t, []int{cx, cy}, tc.cursorpos)
 			}
 
 			if tc.style != (tcell.Style{}) {

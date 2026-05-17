@@ -366,7 +366,7 @@ func TestSplitRank(t *testing.T) {
 			if tc.rankf != nil {
 				item, rankf := gmcp.SplitRankFloat(tc.input)
 				assert.Equal(t, tc.item, item)
-				assert.Equal(t, *tc.rankf, rankf)
+				assert.InDelta(t, *tc.rankf, rankf, 0.0001)
 			}
 		})
 	}

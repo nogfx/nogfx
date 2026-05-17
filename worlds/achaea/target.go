@@ -1,6 +1,7 @@
 package achaea
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 
@@ -86,17 +87,17 @@ func (tgt *Target) queueSet(name string) {
 		return
 	}
 
-	var bytes []byte
+	var cmd []byte
 	if name == "" {
-		bytes = []byte("settarget none")
+		cmd = []byte("settarget none")
 	} else {
-		bytes = []byte("settarget " + name)
+		cmd = []byte("settarget " + name)
 	}
 
-	if n := len(tgt.pendingSends); n > 0 && string(tgt.pendingSends[n-1]) == string(bytes) {
+	if n := len(tgt.pendingSends); n > 0 && bytes.Equal(tgt.pendingSends[n-1], cmd) {
 		return
 	}
-	tgt.pendingSends = append(tgt.pendingSends, bytes)
+	tgt.pendingSends = append(tgt.pendingSends, cmd)
 }
 
 // SetCandidates replaces the list of auto-targetable NPCs. If the current

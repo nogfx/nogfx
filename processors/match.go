@@ -95,6 +95,11 @@ func firstMatch(pats [][]byte, text []byte) [][]byte {
 	return nil
 }
 
+// recoverCallback turns a panic from a match callback into a regular error
+// written back to the caller's named return. The pointer parameter is
+// essential — defer needs a way to mutate the enclosing scope's err.
+//
+//nolint:gocritic // ptrToRefParam: the pointer is required by the deferred-recover idiom.
 func recoverCallback(err *error) {
 	if r := recover(); r != nil {
 		if rerr, ok := r.(error); ok {

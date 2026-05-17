@@ -150,7 +150,7 @@ func (world *world) cmdprocess(batch app.Batch) (app.Batch, error) {
 	for _, ev := range batch.Events {
 		switch ev := ev.(type) {
 		case connection.TelnetCommand:
-			if bytes.Equal(ev.Bytes, telnet.IAC_WILL_GMCP) {
+			if bytes.Equal(ev.Bytes, telnet.IACWillGMCP) {
 				batch = batch.AppendCommand(connection.Send{
 					Bytes: []byte((&gmcp.CoreSupportsSet{
 						"Char":         1,

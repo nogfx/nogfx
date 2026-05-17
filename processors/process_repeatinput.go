@@ -29,7 +29,7 @@ func RepeatInputProcessor() Processor {
 				out = append(out, cmd)
 				continue
 			}
-			for i := 0; i < n; i++ {
+			for range n {
 				out = append(out, connection.Send{Bytes: rest})
 			}
 		}

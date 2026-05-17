@@ -153,7 +153,9 @@ func RenderVital(v *vital, width int, styles []tcell.Style) Row {
 	full := NewRow(fullWidth, NewCell(' ', styles[0]))
 	empty := NewRow(width-len(full), NewCell(' ', styles[1]))
 
-	row := append(full, empty...)
+	row := make(Row, 0, len(full)+len(empty))
+	row = append(row, full...)
+	row = append(row, empty...)
 
 	value := strconv.Itoa(v.Value)
 

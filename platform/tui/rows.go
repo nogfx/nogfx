@@ -2,6 +2,7 @@ package tui
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
@@ -137,11 +138,13 @@ func NewRowFromBytes(bs []byte, styles ...tcell.Style) (Row, tcell.Style) {
 }
 
 // String converts the row to a string.
-func (row Row) String() (str string) {
+func (row Row) String() string {
+	var b strings.Builder
+	b.Grow(len(row))
 	for _, c := range row {
-		str += string(c.Content)
+		b.WriteRune(c.Content)
 	}
-	return
+	return b.String()
 }
 
 // Append adds a new Cell to the end of the Row.
@@ -167,7 +170,7 @@ func (row Row) revIndexSpace() int {
 
 // indexNospace finds the first non-space, or -1 if there are no non-spaces.
 func (row Row) indexNospace() int {
-	for i := 0; i < len(row); i++ {
+	for i := range row {
 		if row[i].Content != ' ' {
 			return i
 		}
@@ -204,12 +207,11 @@ func (row Row) Wrap(width int, padding ...Cell) Rows {
 
 	rows := Rows{}
 
-wordwrap:
 	for i := 0; i < lrow; {
 		// If the remains fits the width, we're done.
 		if len(row[i:]) <= width {
 			rows = append(rows, row[i:])
-			break wordwrap
+			break
 		}
 
 		// Jump to where the width would cut the row and look back

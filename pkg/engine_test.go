@@ -223,7 +223,7 @@ func TestEngine_UnknownCommandIsLoggedNotPanic(t *testing.T) {
 	cancel()
 	select {
 	case err := <-done:
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	case <-time.After(time.Second):
 		t.Fatal("engine did not shut down")
 	}

@@ -326,11 +326,11 @@ func TestCharMessages(t *testing.T) {
 			err := tc.msg.Unmarshal([]byte(tc.data))
 
 			if tc.err != "" {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				assert.Equal(t, tc.err, err.Error())
 				return
 			} else if err != nil {
-				require.Equal(t, "", err.Error())
+				require.NoError(t, err)
 			}
 
 			require.Equal(t, tc.unmarshaled, tc.msg, "unmarshaling hydrates message")

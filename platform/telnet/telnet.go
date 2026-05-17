@@ -29,7 +29,7 @@ const (
 // Common IAC sequences expressed as byte slices for convenient byte.Equal
 // comparisons in the engine.
 var (
-	IAC_WILL_ECHO = []byte{IAC, Will, Echo}
-	IAC_WONT_ECHO = []byte{IAC, Wont, Echo}
-	IAC_WILL_GMCP = []byte{IAC, Will, GMCP}
+	IACWillEcho = []byte{IAC, Will, Echo}
+	IACWontEcho = []byte{IAC, Wont, Echo}
+	IACWillGMCP = []byte{IAC, Will, GMCP}
 )

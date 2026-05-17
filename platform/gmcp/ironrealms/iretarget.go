@@ -20,7 +20,7 @@ func (msg *IRETargetSet) ID() string {
 
 // Marshal converts the message to a string.
 func (msg *IRETargetSet) Marshal() string {
-	return fmt.Sprintf(`IRE.Target.Set "%s"`, msg.Target)
+	return fmt.Sprintf("IRE.Target.Set %q", msg.Target)
 }
 
 // Unmarshal populates the message with data.
@@ -62,7 +62,7 @@ func (msg *IRETargetInfo) Marshal() string {
 	}
 
 	data, _ := json.Marshal(proxy)
-	return fmt.Sprintf("IRE.Target.Info %s", string(data))
+	return "IRE.Target.Info " + string(data)
 }
 
 // Unmarshal populates the message with data.
