@@ -97,7 +97,7 @@ func TestRenderMap(t *testing.T) {
 		"unknown exit": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"asdf": &navigation.Room{},
+					"asdf": {},
 				},
 			},
 			width:  5,
@@ -112,7 +112,7 @@ func TestRenderMap(t *testing.T) {
 		"up exit no player": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"u": &navigation.Room{},
+					"u": {},
 				},
 			},
 			width:  5,
@@ -128,7 +128,7 @@ func TestRenderMap(t *testing.T) {
 			room: &navigation.Room{
 				HasPlayer: true,
 				Exits: map[string]*navigation.Room{
-					"u": &navigation.Room{},
+					"u": {},
 				},
 			},
 			width:  5,
@@ -143,7 +143,7 @@ func TestRenderMap(t *testing.T) {
 		"down exit no player": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"d": &navigation.Room{},
+					"d": {},
 				},
 			},
 			width:  5,
@@ -159,7 +159,7 @@ func TestRenderMap(t *testing.T) {
 			room: &navigation.Room{
 				HasPlayer: true,
 				Exits: map[string]*navigation.Room{
-					"d": &navigation.Room{},
+					"d": {},
 				},
 			},
 			width:  5,
@@ -174,8 +174,8 @@ func TestRenderMap(t *testing.T) {
 		"up down exit no player": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"u": &navigation.Room{},
-					"d": &navigation.Room{},
+					"u": {},
+					"d": {},
 				},
 			},
 			width:  5,
@@ -191,8 +191,8 @@ func TestRenderMap(t *testing.T) {
 			room: &navigation.Room{
 				HasPlayer: true,
 				Exits: map[string]*navigation.Room{
-					"u": &navigation.Room{},
-					"d": &navigation.Room{},
+					"u": {},
+					"d": {},
 				},
 			},
 			width:  5,
@@ -207,7 +207,7 @@ func TestRenderMap(t *testing.T) {
 		"in exit": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"in": &navigation.Room{},
+					"in": {},
 				},
 			},
 			width:  5,
@@ -222,7 +222,7 @@ func TestRenderMap(t *testing.T) {
 		"out exit": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"out": &navigation.Room{},
+					"out": {},
 				},
 			},
 			width:  5,
@@ -237,18 +237,18 @@ func TestRenderMap(t *testing.T) {
 		"all exits": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"n":   &navigation.Room{},
-					"ne":  &navigation.Room{},
-					"e":   &navigation.Room{},
-					"se":  &navigation.Room{},
-					"s":   &navigation.Room{},
-					"sw":  &navigation.Room{},
-					"w":   &navigation.Room{},
-					"nw":  &navigation.Room{},
-					"u":   &navigation.Room{},
-					"d":   &navigation.Room{},
-					"in":  &navigation.Room{},
-					"out": &navigation.Room{},
+					"n":   {},
+					"ne":  {},
+					"e":   {},
+					"se":  {},
+					"s":   {},
+					"sw":  {},
+					"w":   {},
+					"nw":  {},
+					"u":   {},
+					"d":   {},
+					"in":  {},
+					"out": {},
 				},
 			},
 			width:  5,
@@ -263,18 +263,18 @@ func TestRenderMap(t *testing.T) {
 		"all adjacent rooms": {
 			room: &navigation.Room{
 				Exits: map[string]*navigation.Room{
-					"n":   &navigation.Room{},
-					"ne":  &navigation.Room{},
-					"e":   &navigation.Room{},
-					"se":  &navigation.Room{},
-					"s":   &navigation.Room{},
-					"sw":  &navigation.Room{},
-					"w":   &navigation.Room{},
-					"nw":  &navigation.Room{},
-					"u":   &navigation.Room{},
-					"d":   &navigation.Room{},
-					"in":  &navigation.Room{},
-					"out": &navigation.Room{},
+					"n":   {},
+					"ne":  {},
+					"e":   {},
+					"se":  {},
+					"s":   {},
+					"sw":  {},
+					"w":   {},
+					"nw":  {},
+					"u":   {},
+					"d":   {},
+					"in":  {},
+					"out": {},
 				},
 			},
 			width:  13,
@@ -294,17 +294,17 @@ func TestRenderMap(t *testing.T) {
 			room: &navigation.Room{
 				HasPlayer: true,
 				Exits: map[string]*navigation.Room{
-					"n": &navigation.Room{
+					"n": {
 						Exits: map[string]*navigation.Room{
-							"sw": &navigation.Room{},
+							"sw": {},
 						},
 					},
-					"w": &navigation.Room{
+					"w": {
 						Exits: map[string]*navigation.Room{
-							"ne": &navigation.Room{},
+							"ne": {},
 						},
 					},
-					"nw": &navigation.Room{},
+					"nw": {},
 				},
 			},
 			width:  13,
@@ -327,24 +327,24 @@ func TestRenderMap(t *testing.T) {
 				X:         gox.NewInt(3),
 				Y:         gox.NewInt(3),
 				Exits: map[string]*navigation.Room{
-					"n": &navigation.Room{
+					"n": {
 						ID: 2,
 						X:  gox.NewInt(3),
 						Y:  gox.NewInt(5),
 						Exits: map[string]*navigation.Room{
-							"sw": &navigation.Room{
+							"sw": {
 								ID: 3,
 								X:  gox.NewInt(1),
 								Y:  gox.NewInt(3),
 							},
 						},
 					},
-					"w": &navigation.Room{
+					"w": {
 						ID: 3,
 						X:  gox.NewInt(1),
 						Y:  gox.NewInt(3),
 						Exits: map[string]*navigation.Room{
-							"ne": &navigation.Room{
+							"ne": {
 								ID: 2,
 								X:  gox.NewInt(3),
 								Y:  gox.NewInt(5),
@@ -374,16 +374,16 @@ func TestRenderMap(t *testing.T) {
 			room: &navigation.Room{
 				ID: 1,
 				Exits: map[string]*navigation.Room{
-					"in": &navigation.Room{
+					"in": {
 						ID: 2,
 						Exits: map[string]*navigation.Room{
-							"w": &navigation.Room{ID: 1},
+							"w": {ID: 1},
 						},
 					},
-					"out": &navigation.Room{
+					"out": {
 						ID: 3,
 						Exits: map[string]*navigation.Room{
-							"e": &navigation.Room{ID: 1},
+							"e": {ID: 1},
 						},
 					},
 				},

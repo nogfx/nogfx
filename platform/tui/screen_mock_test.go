@@ -4,8 +4,9 @@
 package tui
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"sync"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 // Ensure, that ScreenMock does implement tcell.Screen.
@@ -14,118 +15,118 @@ var _ tcell.Screen = &ScreenMock{}
 
 // ScreenMock is a mock implementation of tcell.Screen.
 //
-// 	func TestSomethingThatUsesScreen(t *testing.T) {
+//	func TestSomethingThatUsesScreen(t *testing.T) {
 //
-// 		// make and configure a mocked tcell.Screen
-// 		mockedScreen := &ScreenMock{
-// 			BeepFunc: func() error {
-// 				panic("mock out the Beep method")
-// 			},
-// 			CanDisplayFunc: func(r rune, checkFallbacks bool) bool {
-// 				panic("mock out the CanDisplay method")
-// 			},
-// 			ChannelEventsFunc: func(ch chan<- tcell.Event, quit <-chan struct{})  {
-// 				panic("mock out the ChannelEvents method")
-// 			},
-// 			CharacterSetFunc: func() string {
-// 				panic("mock out the CharacterSet method")
-// 			},
-// 			ClearFunc: func()  {
-// 				panic("mock out the Clear method")
-// 			},
-// 			ColorsFunc: func() int {
-// 				panic("mock out the Colors method")
-// 			},
-// 			DisableMouseFunc: func()  {
-// 				panic("mock out the DisableMouse method")
-// 			},
-// 			DisablePasteFunc: func()  {
-// 				panic("mock out the DisablePaste method")
-// 			},
-// 			EnableMouseFunc: func(mouseFlagss ...tcell.MouseFlags)  {
-// 				panic("mock out the EnableMouse method")
-// 			},
-// 			EnablePasteFunc: func()  {
-// 				panic("mock out the EnablePaste method")
-// 			},
-// 			FillFunc: func(n rune, style tcell.Style)  {
-// 				panic("mock out the Fill method")
-// 			},
-// 			FiniFunc: func()  {
-// 				panic("mock out the Fini method")
-// 			},
-// 			GetContentFunc: func(x int, y int) (rune, []rune, tcell.Style, int) {
-// 				panic("mock out the GetContent method")
-// 			},
-// 			HasKeyFunc: func(key tcell.Key) bool {
-// 				panic("mock out the HasKey method")
-// 			},
-// 			HasMouseFunc: func() bool {
-// 				panic("mock out the HasMouse method")
-// 			},
-// 			HasPendingEventFunc: func() bool {
-// 				panic("mock out the HasPendingEvent method")
-// 			},
-// 			HideCursorFunc: func()  {
-// 				panic("mock out the HideCursor method")
-// 			},
-// 			InitFunc: func() error {
-// 				panic("mock out the Init method")
-// 			},
-// 			PollEventFunc: func() tcell.Event {
-// 				panic("mock out the PollEvent method")
-// 			},
-// 			PostEventFunc: func(ev tcell.Event) error {
-// 				panic("mock out the PostEvent method")
-// 			},
-// 			PostEventWaitFunc: func(ev tcell.Event)  {
-// 				panic("mock out the PostEventWait method")
-// 			},
-// 			RegisterRuneFallbackFunc: func(r rune, subst string)  {
-// 				panic("mock out the RegisterRuneFallback method")
-// 			},
-// 			ResizeFunc: func(n1 int, n2 int, n3 int, n4 int)  {
-// 				panic("mock out the Resize method")
-// 			},
-// 			ResumeFunc: func() error {
-// 				panic("mock out the Resume method")
-// 			},
-// 			SetCellFunc: func(x int, y int, style tcell.Style, ch ...rune)  {
-// 				panic("mock out the SetCell method")
-// 			},
-// 			SetContentFunc: func(x int, y int, mainc rune, combc []rune, style tcell.Style)  {
-// 				panic("mock out the SetContent method")
-// 			},
-// 			SetCursorStyleFunc: func(cursorStyle tcell.CursorStyle)  {
-// 				panic("mock out the SetCursorStyle method")
-// 			},
-// 			SetStyleFunc: func(style tcell.Style)  {
-// 				panic("mock out the SetStyle method")
-// 			},
-// 			ShowFunc: func()  {
-// 				panic("mock out the Show method")
-// 			},
-// 			ShowCursorFunc: func(x int, y int)  {
-// 				panic("mock out the ShowCursor method")
-// 			},
-// 			SizeFunc: func() (int, int) {
-// 				panic("mock out the Size method")
-// 			},
-// 			SuspendFunc: func() error {
-// 				panic("mock out the Suspend method")
-// 			},
-// 			SyncFunc: func()  {
-// 				panic("mock out the Sync method")
-// 			},
-// 			UnregisterRuneFallbackFunc: func(r rune)  {
-// 				panic("mock out the UnregisterRuneFallback method")
-// 			},
-// 		}
+//		// make and configure a mocked tcell.Screen
+//		mockedScreen := &ScreenMock{
+//			BeepFunc: func() error {
+//				panic("mock out the Beep method")
+//			},
+//			CanDisplayFunc: func(r rune, checkFallbacks bool) bool {
+//				panic("mock out the CanDisplay method")
+//			},
+//			ChannelEventsFunc: func(ch chan<- tcell.Event, quit <-chan struct{})  {
+//				panic("mock out the ChannelEvents method")
+//			},
+//			CharacterSetFunc: func() string {
+//				panic("mock out the CharacterSet method")
+//			},
+//			ClearFunc: func()  {
+//				panic("mock out the Clear method")
+//			},
+//			ColorsFunc: func() int {
+//				panic("mock out the Colors method")
+//			},
+//			DisableMouseFunc: func()  {
+//				panic("mock out the DisableMouse method")
+//			},
+//			DisablePasteFunc: func()  {
+//				panic("mock out the DisablePaste method")
+//			},
+//			EnableMouseFunc: func(mouseFlagss ...tcell.MouseFlags)  {
+//				panic("mock out the EnableMouse method")
+//			},
+//			EnablePasteFunc: func()  {
+//				panic("mock out the EnablePaste method")
+//			},
+//			FillFunc: func(n rune, style tcell.Style)  {
+//				panic("mock out the Fill method")
+//			},
+//			FiniFunc: func()  {
+//				panic("mock out the Fini method")
+//			},
+//			GetContentFunc: func(x int, y int) (rune, []rune, tcell.Style, int) {
+//				panic("mock out the GetContent method")
+//			},
+//			HasKeyFunc: func(key tcell.Key) bool {
+//				panic("mock out the HasKey method")
+//			},
+//			HasMouseFunc: func() bool {
+//				panic("mock out the HasMouse method")
+//			},
+//			HasPendingEventFunc: func() bool {
+//				panic("mock out the HasPendingEvent method")
+//			},
+//			HideCursorFunc: func()  {
+//				panic("mock out the HideCursor method")
+//			},
+//			InitFunc: func() error {
+//				panic("mock out the Init method")
+//			},
+//			PollEventFunc: func() tcell.Event {
+//				panic("mock out the PollEvent method")
+//			},
+//			PostEventFunc: func(ev tcell.Event) error {
+//				panic("mock out the PostEvent method")
+//			},
+//			PostEventWaitFunc: func(ev tcell.Event)  {
+//				panic("mock out the PostEventWait method")
+//			},
+//			RegisterRuneFallbackFunc: func(r rune, subst string)  {
+//				panic("mock out the RegisterRuneFallback method")
+//			},
+//			ResizeFunc: func(n1 int, n2 int, n3 int, n4 int)  {
+//				panic("mock out the Resize method")
+//			},
+//			ResumeFunc: func() error {
+//				panic("mock out the Resume method")
+//			},
+//			SetCellFunc: func(x int, y int, style tcell.Style, ch ...rune)  {
+//				panic("mock out the SetCell method")
+//			},
+//			SetContentFunc: func(x int, y int, mainc rune, combc []rune, style tcell.Style)  {
+//				panic("mock out the SetContent method")
+//			},
+//			SetCursorStyleFunc: func(cursorStyle tcell.CursorStyle)  {
+//				panic("mock out the SetCursorStyle method")
+//			},
+//			SetStyleFunc: func(style tcell.Style)  {
+//				panic("mock out the SetStyle method")
+//			},
+//			ShowFunc: func()  {
+//				panic("mock out the Show method")
+//			},
+//			ShowCursorFunc: func(x int, y int)  {
+//				panic("mock out the ShowCursor method")
+//			},
+//			SizeFunc: func() (int, int) {
+//				panic("mock out the Size method")
+//			},
+//			SuspendFunc: func() error {
+//				panic("mock out the Suspend method")
+//			},
+//			SyncFunc: func()  {
+//				panic("mock out the Sync method")
+//			},
+//			UnregisterRuneFallbackFunc: func(r rune)  {
+//				panic("mock out the UnregisterRuneFallback method")
+//			},
+//		}
 //
-// 		// use mockedScreen in code that requires tcell.Screen
-// 		// and then make assertions.
+//		// use mockedScreen in code that requires tcell.Screen
+//		// and then make assertions.
 //
-// 	}
+//	}
 type ScreenMock struct {
 	// BeepFunc mocks the Beep method.
 	BeepFunc func() error
@@ -449,7 +450,8 @@ func (mock *ScreenMock) Beep() error {
 
 // BeepCalls gets all the calls that were made to Beep.
 // Check the length with:
-//     len(mockedScreen.BeepCalls())
+//
+//	len(mockedScreen.BeepCalls())
 func (mock *ScreenMock) BeepCalls() []struct {
 } {
 	var calls []struct {
@@ -480,7 +482,8 @@ func (mock *ScreenMock) CanDisplay(r rune, checkFallbacks bool) bool {
 
 // CanDisplayCalls gets all the calls that were made to CanDisplay.
 // Check the length with:
-//     len(mockedScreen.CanDisplayCalls())
+//
+//	len(mockedScreen.CanDisplayCalls())
 func (mock *ScreenMock) CanDisplayCalls() []struct {
 	R              rune
 	CheckFallbacks bool
@@ -515,7 +518,8 @@ func (mock *ScreenMock) ChannelEvents(ch chan<- tcell.Event, quit <-chan struct{
 
 // ChannelEventsCalls gets all the calls that were made to ChannelEvents.
 // Check the length with:
-//     len(mockedScreen.ChannelEventsCalls())
+//
+//	len(mockedScreen.ChannelEventsCalls())
 func (mock *ScreenMock) ChannelEventsCalls() []struct {
 	Ch   chan<- tcell.Event
 	Quit <-chan struct{}
@@ -545,7 +549,8 @@ func (mock *ScreenMock) CharacterSet() string {
 
 // CharacterSetCalls gets all the calls that were made to CharacterSet.
 // Check the length with:
-//     len(mockedScreen.CharacterSetCalls())
+//
+//	len(mockedScreen.CharacterSetCalls())
 func (mock *ScreenMock) CharacterSetCalls() []struct {
 } {
 	var calls []struct {
@@ -571,7 +576,8 @@ func (mock *ScreenMock) Clear() {
 
 // ClearCalls gets all the calls that were made to Clear.
 // Check the length with:
-//     len(mockedScreen.ClearCalls())
+//
+//	len(mockedScreen.ClearCalls())
 func (mock *ScreenMock) ClearCalls() []struct {
 } {
 	var calls []struct {
@@ -597,7 +603,8 @@ func (mock *ScreenMock) Colors() int {
 
 // ColorsCalls gets all the calls that were made to Colors.
 // Check the length with:
-//     len(mockedScreen.ColorsCalls())
+//
+//	len(mockedScreen.ColorsCalls())
 func (mock *ScreenMock) ColorsCalls() []struct {
 } {
 	var calls []struct {
@@ -623,7 +630,8 @@ func (mock *ScreenMock) DisableMouse() {
 
 // DisableMouseCalls gets all the calls that were made to DisableMouse.
 // Check the length with:
-//     len(mockedScreen.DisableMouseCalls())
+//
+//	len(mockedScreen.DisableMouseCalls())
 func (mock *ScreenMock) DisableMouseCalls() []struct {
 } {
 	var calls []struct {
@@ -649,7 +657,8 @@ func (mock *ScreenMock) DisablePaste() {
 
 // DisablePasteCalls gets all the calls that were made to DisablePaste.
 // Check the length with:
-//     len(mockedScreen.DisablePasteCalls())
+//
+//	len(mockedScreen.DisablePasteCalls())
 func (mock *ScreenMock) DisablePasteCalls() []struct {
 } {
 	var calls []struct {
@@ -678,7 +687,8 @@ func (mock *ScreenMock) EnableMouse(mouseFlagss ...tcell.MouseFlags) {
 
 // EnableMouseCalls gets all the calls that were made to EnableMouse.
 // Check the length with:
-//     len(mockedScreen.EnableMouseCalls())
+//
+//	len(mockedScreen.EnableMouseCalls())
 func (mock *ScreenMock) EnableMouseCalls() []struct {
 	MouseFlagss []tcell.MouseFlags
 } {
@@ -706,7 +716,8 @@ func (mock *ScreenMock) EnablePaste() {
 
 // EnablePasteCalls gets all the calls that were made to EnablePaste.
 // Check the length with:
-//     len(mockedScreen.EnablePasteCalls())
+//
+//	len(mockedScreen.EnablePasteCalls())
 func (mock *ScreenMock) EnablePasteCalls() []struct {
 } {
 	var calls []struct {
@@ -737,7 +748,8 @@ func (mock *ScreenMock) Fill(n rune, style tcell.Style) {
 
 // FillCalls gets all the calls that were made to Fill.
 // Check the length with:
-//     len(mockedScreen.FillCalls())
+//
+//	len(mockedScreen.FillCalls())
 func (mock *ScreenMock) FillCalls() []struct {
 	N     rune
 	Style tcell.Style
@@ -767,7 +779,8 @@ func (mock *ScreenMock) Fini() {
 
 // FiniCalls gets all the calls that were made to Fini.
 // Check the length with:
-//     len(mockedScreen.FiniCalls())
+//
+//	len(mockedScreen.FiniCalls())
 func (mock *ScreenMock) FiniCalls() []struct {
 } {
 	var calls []struct {
@@ -798,7 +811,8 @@ func (mock *ScreenMock) GetContent(x int, y int) (rune, []rune, tcell.Style, int
 
 // GetContentCalls gets all the calls that were made to GetContent.
 // Check the length with:
-//     len(mockedScreen.GetContentCalls())
+//
+//	len(mockedScreen.GetContentCalls())
 func (mock *ScreenMock) GetContentCalls() []struct {
 	X int
 	Y int
@@ -831,7 +845,8 @@ func (mock *ScreenMock) HasKey(key tcell.Key) bool {
 
 // HasKeyCalls gets all the calls that were made to HasKey.
 // Check the length with:
-//     len(mockedScreen.HasKeyCalls())
+//
+//	len(mockedScreen.HasKeyCalls())
 func (mock *ScreenMock) HasKeyCalls() []struct {
 	Key tcell.Key
 } {
@@ -859,7 +874,8 @@ func (mock *ScreenMock) HasMouse() bool {
 
 // HasMouseCalls gets all the calls that were made to HasMouse.
 // Check the length with:
-//     len(mockedScreen.HasMouseCalls())
+//
+//	len(mockedScreen.HasMouseCalls())
 func (mock *ScreenMock) HasMouseCalls() []struct {
 } {
 	var calls []struct {
@@ -885,7 +901,8 @@ func (mock *ScreenMock) HasPendingEvent() bool {
 
 // HasPendingEventCalls gets all the calls that were made to HasPendingEvent.
 // Check the length with:
-//     len(mockedScreen.HasPendingEventCalls())
+//
+//	len(mockedScreen.HasPendingEventCalls())
 func (mock *ScreenMock) HasPendingEventCalls() []struct {
 } {
 	var calls []struct {
@@ -911,7 +928,8 @@ func (mock *ScreenMock) HideCursor() {
 
 // HideCursorCalls gets all the calls that were made to HideCursor.
 // Check the length with:
-//     len(mockedScreen.HideCursorCalls())
+//
+//	len(mockedScreen.HideCursorCalls())
 func (mock *ScreenMock) HideCursorCalls() []struct {
 } {
 	var calls []struct {
@@ -937,7 +955,8 @@ func (mock *ScreenMock) Init() error {
 
 // InitCalls gets all the calls that were made to Init.
 // Check the length with:
-//     len(mockedScreen.InitCalls())
+//
+//	len(mockedScreen.InitCalls())
 func (mock *ScreenMock) InitCalls() []struct {
 } {
 	var calls []struct {
@@ -963,7 +982,8 @@ func (mock *ScreenMock) PollEvent() tcell.Event {
 
 // PollEventCalls gets all the calls that were made to PollEvent.
 // Check the length with:
-//     len(mockedScreen.PollEventCalls())
+//
+//	len(mockedScreen.PollEventCalls())
 func (mock *ScreenMock) PollEventCalls() []struct {
 } {
 	var calls []struct {
@@ -992,7 +1012,8 @@ func (mock *ScreenMock) PostEvent(ev tcell.Event) error {
 
 // PostEventCalls gets all the calls that were made to PostEvent.
 // Check the length with:
-//     len(mockedScreen.PostEventCalls())
+//
+//	len(mockedScreen.PostEventCalls())
 func (mock *ScreenMock) PostEventCalls() []struct {
 	Ev tcell.Event
 } {
@@ -1023,7 +1044,8 @@ func (mock *ScreenMock) PostEventWait(ev tcell.Event) {
 
 // PostEventWaitCalls gets all the calls that were made to PostEventWait.
 // Check the length with:
-//     len(mockedScreen.PostEventWaitCalls())
+//
+//	len(mockedScreen.PostEventWaitCalls())
 func (mock *ScreenMock) PostEventWaitCalls() []struct {
 	Ev tcell.Event
 } {
@@ -1056,7 +1078,8 @@ func (mock *ScreenMock) RegisterRuneFallback(r rune, subst string) {
 
 // RegisterRuneFallbackCalls gets all the calls that were made to RegisterRuneFallback.
 // Check the length with:
-//     len(mockedScreen.RegisterRuneFallbackCalls())
+//
+//	len(mockedScreen.RegisterRuneFallbackCalls())
 func (mock *ScreenMock) RegisterRuneFallbackCalls() []struct {
 	R     rune
 	Subst string
@@ -1095,7 +1118,8 @@ func (mock *ScreenMock) Resize(n1 int, n2 int, n3 int, n4 int) {
 
 // ResizeCalls gets all the calls that were made to Resize.
 // Check the length with:
-//     len(mockedScreen.ResizeCalls())
+//
+//	len(mockedScreen.ResizeCalls())
 func (mock *ScreenMock) ResizeCalls() []struct {
 	N1 int
 	N2 int
@@ -1129,7 +1153,8 @@ func (mock *ScreenMock) Resume() error {
 
 // ResumeCalls gets all the calls that were made to Resume.
 // Check the length with:
-//     len(mockedScreen.ResumeCalls())
+//
+//	len(mockedScreen.ResumeCalls())
 func (mock *ScreenMock) ResumeCalls() []struct {
 } {
 	var calls []struct {
@@ -1164,7 +1189,8 @@ func (mock *ScreenMock) SetCell(x int, y int, style tcell.Style, ch ...rune) {
 
 // SetCellCalls gets all the calls that were made to SetCell.
 // Check the length with:
-//     len(mockedScreen.SetCellCalls())
+//
+//	len(mockedScreen.SetCellCalls())
 func (mock *ScreenMock) SetCellCalls() []struct {
 	X     int
 	Y     int
@@ -1209,7 +1235,8 @@ func (mock *ScreenMock) SetContent(x int, y int, mainc rune, combc []rune, style
 
 // SetContentCalls gets all the calls that were made to SetContent.
 // Check the length with:
-//     len(mockedScreen.SetContentCalls())
+//
+//	len(mockedScreen.SetContentCalls())
 func (mock *ScreenMock) SetContentCalls() []struct {
 	X     int
 	Y     int
@@ -1248,7 +1275,8 @@ func (mock *ScreenMock) SetCursorStyle(cursorStyle tcell.CursorStyle) {
 
 // SetCursorStyleCalls gets all the calls that were made to SetCursorStyle.
 // Check the length with:
-//     len(mockedScreen.SetCursorStyleCalls())
+//
+//	len(mockedScreen.SetCursorStyleCalls())
 func (mock *ScreenMock) SetCursorStyleCalls() []struct {
 	CursorStyle tcell.CursorStyle
 } {
@@ -1279,7 +1307,8 @@ func (mock *ScreenMock) SetStyle(style tcell.Style) {
 
 // SetStyleCalls gets all the calls that were made to SetStyle.
 // Check the length with:
-//     len(mockedScreen.SetStyleCalls())
+//
+//	len(mockedScreen.SetStyleCalls())
 func (mock *ScreenMock) SetStyleCalls() []struct {
 	Style tcell.Style
 } {
@@ -1307,7 +1336,8 @@ func (mock *ScreenMock) Show() {
 
 // ShowCalls gets all the calls that were made to Show.
 // Check the length with:
-//     len(mockedScreen.ShowCalls())
+//
+//	len(mockedScreen.ShowCalls())
 func (mock *ScreenMock) ShowCalls() []struct {
 } {
 	var calls []struct {
@@ -1338,7 +1368,8 @@ func (mock *ScreenMock) ShowCursor(x int, y int) {
 
 // ShowCursorCalls gets all the calls that were made to ShowCursor.
 // Check the length with:
-//     len(mockedScreen.ShowCursorCalls())
+//
+//	len(mockedScreen.ShowCursorCalls())
 func (mock *ScreenMock) ShowCursorCalls() []struct {
 	X int
 	Y int
@@ -1368,7 +1399,8 @@ func (mock *ScreenMock) Size() (int, int) {
 
 // SizeCalls gets all the calls that were made to Size.
 // Check the length with:
-//     len(mockedScreen.SizeCalls())
+//
+//	len(mockedScreen.SizeCalls())
 func (mock *ScreenMock) SizeCalls() []struct {
 } {
 	var calls []struct {
@@ -1394,7 +1426,8 @@ func (mock *ScreenMock) Suspend() error {
 
 // SuspendCalls gets all the calls that were made to Suspend.
 // Check the length with:
-//     len(mockedScreen.SuspendCalls())
+//
+//	len(mockedScreen.SuspendCalls())
 func (mock *ScreenMock) SuspendCalls() []struct {
 } {
 	var calls []struct {
@@ -1420,7 +1453,8 @@ func (mock *ScreenMock) Sync() {
 
 // SyncCalls gets all the calls that were made to Sync.
 // Check the length with:
-//     len(mockedScreen.SyncCalls())
+//
+//	len(mockedScreen.SyncCalls())
 func (mock *ScreenMock) SyncCalls() []struct {
 } {
 	var calls []struct {
@@ -1449,7 +1483,8 @@ func (mock *ScreenMock) UnregisterRuneFallback(r rune) {
 
 // UnregisterRuneFallbackCalls gets all the calls that were made to UnregisterRuneFallback.
 // Check the length with:
-//     len(mockedScreen.UnregisterRuneFallbackCalls())
+//
+//	len(mockedScreen.UnregisterRuneFallbackCalls())
 func (mock *ScreenMock) UnregisterRuneFallbackCalls() []struct {
 	R rune
 } {

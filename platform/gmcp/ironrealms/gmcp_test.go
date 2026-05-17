@@ -47,9 +47,9 @@ func TestParse(t *testing.T) {
 			msg:  &ironrealms.IRETargetInfo{},
 		},
 
-		"non-existant": {
-			data: "Non.Existant",
-			err:  "unknown message 'Non.Existant'",
+		"non-existent": {
+			data: "Non.Existent",
+			err:  "unknown message 'Non.Existent'",
 		},
 
 		"invalid JSON": {

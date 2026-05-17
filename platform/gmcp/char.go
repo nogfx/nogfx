@@ -2,7 +2,9 @@ package gmcp
 
 // CharLogin is a GMCP message to log a character in.
 type CharLogin struct {
-	Name     string `json:"name"`
+	Name string `json:"name"`
+	// #nosec G117 -- this is the wire field name defined by the GMCP
+	// Char.Login message specification, not a secret stored at rest.
 	Password string `json:"password"`
 }
 

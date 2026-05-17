@@ -35,7 +35,7 @@ func TestDecode_KnownMessage(t *testing.T) {
 func TestDecode_UnknownMessage_SilentlySkipped(t *testing.T) {
 	batch := app.Batch{
 		Events: []app.Event{
-			connection.GMCPFrame{Payload: []byte("Non.Existant {}")},
+			connection.GMCPFrame{Payload: []byte("Non.Existent {}")},
 		},
 	}
 

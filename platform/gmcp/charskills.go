@@ -61,7 +61,7 @@ func (msg *CharSkillsGroups) Marshal() string {
 		Rank string `json:"rank"`
 	}
 
-	proxies := []Proxy{}
+	proxies := make([]Proxy, 0, len(*msg))
 
 	for _, group := range *msg {
 		proxy := Proxy{group, group.Rank}

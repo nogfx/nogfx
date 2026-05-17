@@ -126,7 +126,7 @@ func (msg *RoomInfo) Unmarshal(data []byte) error {
 		return err
 	}
 
-	*msg = (RoomInfo)(*proxy.RoomInfo)
+	*msg = *proxy.RoomInfo
 
 	coords := strings.Split(proxy.PCoords, ",")
 	switch {

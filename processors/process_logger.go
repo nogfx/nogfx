@@ -14,12 +14,16 @@ import (
 // prompts, and outgoing send commands) to the given file path. The parent
 // directories are created if they don't already exist.
 func LogProcessor(dir, filename string) (Processor, error) {
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory %q: %w", dir, err)
 	}
 
 	path := filepath.Join(dir, filename)
 
+	// #nosec G304 -- dir is supplied by the world's processor (a known
+	// per-session log directory under pkg.Directory); filename is a
+	// timestamp-formatted string. The "variable path" warning is a false
+	// positive in this controlled-input setting.
 	file, err := os.Create(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create log file %q: %w", path, err)

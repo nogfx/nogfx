@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/icza/gox/gox"
+
 	"github.com/nogfx/nogfx/platform/gmcp"
 )
 

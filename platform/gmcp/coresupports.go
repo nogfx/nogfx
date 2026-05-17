@@ -10,7 +10,7 @@ import (
 )
 
 func marshalCoreSupports(m map[string]int) string {
-	list := []string{}
+	list := make([]string, 0, len(m))
 	for module, version := range m {
 		list = append(list, fmt.Sprintf("%s %d", module, version))
 	}
@@ -60,7 +60,7 @@ func (msg *CoreSupportsSet) ID() string {
 // Marshal converts the message to a string.
 func (msg *CoreSupportsSet) Marshal() string {
 	data := marshalCoreSupports(map[string]int(*msg))
-	return fmt.Sprintf("%s %s", msg.ID(), string(data))
+	return fmt.Sprintf("%s %s", msg.ID(), data)
 }
 
 // Unmarshal populates the message with data.
@@ -81,7 +81,7 @@ func (msg *CoreSupportsAdd) ID() string {
 // Marshal converts the message to a string.
 func (msg *CoreSupportsAdd) Marshal() string {
 	data := marshalCoreSupports(map[string]int(*msg))
-	return fmt.Sprintf("%s %s", msg.ID(), string(data))
+	return fmt.Sprintf("%s %s", msg.ID(), data)
 }
 
 // Unmarshal populates the message with data.
@@ -102,7 +102,7 @@ func (msg *CoreSupportsRemove) ID() string {
 // Marshal converts the message to a string.
 func (msg *CoreSupportsRemove) Marshal() string {
 	data := marshalCoreSupports(map[string]int(*msg))
-	return fmt.Sprintf("%s %s", msg.ID(), string(data))
+	return fmt.Sprintf("%s %s", msg.ID(), data)
 }
 
 // Unmarshal populates the message with data.

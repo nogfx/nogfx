@@ -142,7 +142,7 @@ func (msg *CharStatus) Unmarshal(data []byte) error {
 		return err
 	}
 
-	*msg = (CharStatus)(*proxy.CharStatus)
+	*msg = *proxy.CharStatus
 
 	if proxy.PCity != nil {
 		if *proxy.PCity == "(None)" {
@@ -275,7 +275,7 @@ func (msg *CharVitals) Unmarshal(data []byte) error {
 		return err
 	}
 
-	*msg = (CharVitals)(*proxy.CharVitals)
+	*msg = *proxy.CharVitals
 
 	msg.Bal = proxy.PBal == "1"
 	msg.Eq = proxy.PEq == "1"

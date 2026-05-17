@@ -32,9 +32,9 @@ func TestParse(t *testing.T) {
 			msg:  &agmcp.CharVitals{},
 		},
 
-		"non-existant": {
-			data: "Non.Existant",
-			err:  "unknown message 'Non.Existant'",
+		"non-existent": {
+			data: "Non.Existent",
+			err:  "unknown message 'Non.Existent'",
 		},
 
 		"invalid JSON": {

@@ -13,9 +13,9 @@ import (
 
 func TestSplitInputProcessor(t *testing.T) {
 	tcs := map[string]struct {
-		sep     []byte
-		input   [][]byte
-		output  [][]byte
+		sep    []byte
+		input  [][]byte
+		output [][]byte
 	}{
 		"empty": {
 			input:  nil,

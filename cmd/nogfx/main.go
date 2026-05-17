@@ -14,10 +14,10 @@ import (
 
 	"github.com/nogfx/nogfx/app"
 	"github.com/nogfx/nogfx/pkg"
-	"github.com/nogfx/nogfx/worlds/achaea"
 	"github.com/nogfx/nogfx/platform/telnet"
 	"github.com/nogfx/nogfx/platform/tui"
 	"github.com/nogfx/nogfx/processors"
+	"github.com/nogfx/nogfx/worlds/achaea"
 
 	"github.com/gdamore/tcell/v2"
 	"golang.org/x/net/idna"
@@ -30,12 +30,16 @@ func main() {
 
 	f, err := os.OpenFile(
 		filepath.Join(pkg.Directory, "errors.log"),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644,
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			log.Printf("close error log: %v", cerr)
+		}
+	}()
 	log.SetOutput(f)
 
 	address, err := parseAddress(os.Args[1])

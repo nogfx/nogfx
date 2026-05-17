@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/icza/gox/gox"
+
+	"github.com/nogfx/nogfx/lib/navigation"
 	"github.com/nogfx/nogfx/platform/gmcp"
 	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
 	igmcp "github.com/nogfx/nogfx/platform/gmcp/ironrealms"
-	"github.com/nogfx/nogfx/lib/navigation"
 	"github.com/nogfx/nogfx/worlds/achaea"
 
 	"github.com/stretchr/testify/assert"

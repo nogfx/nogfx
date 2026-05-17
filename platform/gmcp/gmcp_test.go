@@ -7,6 +7,7 @@ import (
 
 	"github.com/icza/gox/gox"
 	"github.com/stretchr/testify/assert"
+
 	"github.com/nogfx/nogfx/platform/gmcp"
 	"github.com/nogfx/nogfx/platform/telnet"
 )
@@ -197,9 +198,9 @@ func TestParse(t *testing.T) {
 			msgs:  []gmcp.Message{&gmcp.RoomRemovePlayer{}},
 		},
 
-		"non-existant": {
-			datas: []string{"Non.Existant"},
-			errs:  []string{"unknown message 'Non.Existant'"},
+		"non-existent": {
+			datas: []string{"Non.Existent"},
+			errs:  []string{"unknown message 'Non.Existent'"},
 		},
 
 		"invalid JSON": {

@@ -59,7 +59,7 @@ func (msg *CharAfflictionsRemove) ID() string {
 
 // Marshal converts the message to a string.
 func (msg *CharAfflictionsRemove) Marshal() string {
-	list := []string{}
+	list := make([]string, 0, len(*msg))
 
 	for _, affliction := range *msg {
 		list = append(list, affliction.Name)

@@ -31,7 +31,7 @@ func (msg *CharDefencesList) Unmarshal(data []byte) error {
 	return Unmarshal(data, msg)
 }
 
-// CharDefencesAdd is a GMCP message detailing an additonal defense.
+// CharDefencesAdd is a GMCP message detailing an additional defense.
 type CharDefencesAdd CharDefence
 
 // ID is the prefix before the message's data.
@@ -59,7 +59,7 @@ func (msg *CharDefencesRemove) ID() string {
 
 // Marshal converts the message to a string.
 func (msg *CharDefencesRemove) Marshal() string {
-	list := []string{}
+	list := make([]string, 0, len(*msg))
 
 	for _, defence := range *msg {
 		list = append(list, defence.Name)

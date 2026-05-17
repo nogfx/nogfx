@@ -10,13 +10,13 @@ import (
 
 	"github.com/nogfx/nogfx/app"
 	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/lib/navigation"
 	"github.com/nogfx/nogfx/pkg"
 	"github.com/nogfx/nogfx/platform/gmcp"
 	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
 	igmcp "github.com/nogfx/nogfx/platform/gmcp/ironrealms"
-	"github.com/nogfx/nogfx/lib/navigation"
-	"github.com/nogfx/nogfx/processors"
 	"github.com/nogfx/nogfx/platform/telnet"
+	"github.com/nogfx/nogfx/processors"
 	"github.com/nogfx/nogfx/ui"
 )
 

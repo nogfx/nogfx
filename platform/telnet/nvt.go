@@ -50,7 +50,6 @@ type NVT struct {
 
 	options map[optionSide]map[byte]optionState
 
-	outBuffer []byte
 	cmdBuffer []byte
 
 	ourCoulds   []byte

@@ -20,7 +20,7 @@ func init() {
 
 	dir = filepath.Join(dir, "nogfx")
 
-	err = os.MkdirAll(dir, os.ModePerm)
+	err = os.MkdirAll(dir, 0o750)
 	if err != nil {
 		log.Fatalf("failed creating directory %q: %s", dir, err)
 	}

@@ -62,7 +62,7 @@ type Layout struct {
 }
 
 func (l *Layout) panes() []pane {
-	panes := []pane{}
+	panes := make([]pane, 0, len(paneNames))
 	for _, name := range paneNames {
 		panes = append(panes, l.pane(name))
 	}

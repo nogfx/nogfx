@@ -1,8 +1,6 @@
 package achaea
 
 import (
-	"bytes"
-	"fmt"
 	"strings"
 
 	"github.com/nogfx/nogfx/app"
@@ -194,21 +192,21 @@ var tvAttacks = map[string]string{
 // tvModifiers maps attack-modifier patterns to the short label rendered in
 // the summary line.
 var tvModifiers = map[string]string{
-	"You miss.":                                            "\x1b[33mmiss\x1b[0m",
-	"You connect!":                                         "hit",
-	"You connect to the ^!":                                "hit",
-	"You connect to the ^ ^!":                              "hit",
-	"You have scored a CRITICAL hit!":                      "x2",
-	"You have scored a CRUSHING CRITICAL hit!":             "x4",
-	"You have scored an OBLITERATING CRITICAL hit!":        "x8",
-	"You have scored an ANNIHILATINGLY POWERFUL CRITICAL hit!": "\x1b[32mx16\x1b[0m",
-	"You have scored a WORLD-SHATTERING CRITICAL HIT!!!":   "\x1b[1;32mx32\x1b[0m",
+	"You miss.":                                                 "\x1b[33mmiss\x1b[0m",
+	"You connect!":                                              "hit",
+	"You connect to the ^!":                                     "hit",
+	"You connect to the ^ ^!":                                   "hit",
+	"You have scored a CRITICAL hit!":                           "x2",
+	"You have scored a CRUSHING CRITICAL hit!":                  "x4",
+	"You have scored an OBLITERATING CRITICAL hit!":             "x8",
+	"You have scored an ANNIHILATINGLY POWERFUL CRITICAL hit!":  "\x1b[32mx16\x1b[0m",
+	"You have scored a WORLD-SHATTERING CRITICAL HIT!!!":        "\x1b[1;32mx32\x1b[0m",
 	"You kick scythes through nothing, hitting only empty air.": "\x1b[33munshielded\x1b[0m",
-	"* twists ^ body out of harm's way.":                   "\x1b[33mdodge\x1b[0m",
-	"* backs away and out of your reach.":                  "\x1b[33mdodge\x1b[0m",
-	"A reflection of ^ blinks out of existence.":           "\x1b[33mreflection\x1b[0m",
+	"* twists ^ body out of harm's way.":                        "\x1b[33mdodge\x1b[0m",
+	"* backs away and out of your reach.":                       "\x1b[33mdodge\x1b[0m",
+	"A reflection of ^ blinks out of existence.":                "\x1b[33mreflection\x1b[0m",
 	"* stands firm and does not budge against the thrust kick.": "\x1b[33msturdiness\x1b[0m",
-	"* ceases tending to ^ wounds.":                        "awoke",
+	"* ceases tending to ^ wounds.":                             "awoke",
 }
 
 func classifyTunnelVision(text []byte, _ *Character) tvClass {
@@ -243,33 +241,4 @@ func classifyTunnelVision(text []byte, _ *Character) tvClass {
 		}
 	}
 	return tvClass{kind: tvNone}
-}
-
-// stripStyle is exported for tests so they can compare against the visible
-// portion of a styled summary line.
-func stripStyle(text []byte) []byte {
-	var out []byte
-	for i := 0; i < len(text); i++ {
-		if text[i] == 0x1b && i+1 < len(text) && text[i+1] == '[' {
-			j := i + 2
-			for j < len(text) && text[j] != 'm' {
-				j++
-			}
-			i = j
-			continue
-		}
-		out = append(out, text[i])
-	}
-	return bytes.TrimSpace(out)
-}
-
-// formatCount is unused at present but reserved for future use when
-// TunnelVision reports e.g. "5 misses" instead of repeating "miss".
-//
-//nolint:unused
-func formatCount(n int, label string) string {
-	if n <= 1 {
-		return label
-	}
-	return fmt.Sprintf("%dx %s", n, label)
 }

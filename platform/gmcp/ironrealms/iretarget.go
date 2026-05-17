@@ -81,7 +81,7 @@ func (msg *IRETargetInfo) Unmarshal(data []byte) error {
 		return err
 	}
 
-	*msg = (IRETargetInfo)(*proxy.IRETargetInfo)
+	*msg = *proxy.IRETargetInfo
 
 	if proxy.CHealth != "" {
 		if proxy.CHealth[len(proxy.CHealth)-1] == '%' {

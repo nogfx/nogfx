@@ -23,8 +23,7 @@ var (
 		[]byte("You launch a powerful uppercut at *."),
 		[]byte("A dizzying beam of energy strikes you as your attack rebounds off of *'s shield."),
 	}
-	bashGoldPattern   = []byte("A ^ pile of sovereigns spills from the corpse.")
-	bashShieldPattern = []byte("A nearly invisible magical shield forms around {*}.")
+	bashGoldPattern = []byte("A ^ pile of sovereigns spills from the corpse.")
 )
 
 // Bashing enhances bashing-related tasks: when the user types "kill", it
