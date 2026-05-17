@@ -1,7 +1,0 @@
----
-engines:
-  duplication:
-    exclude_paths:
-      - "**/*_test.go"
-exclude_paths:
-  - "**/*_mock.go"
