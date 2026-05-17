@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/engine"
 	"github.com/nogfx/nogfx/platform/telnet"
 	"github.com/nogfx/nogfx/platform/tui"
 	"github.com/nogfx/nogfx/processors"
@@ -113,7 +112,7 @@ func run(address string) error {
 		return fmt.Errorf("failed to create log processor: %w", err)
 	}
 
-	eng := &engine.Engine{
+	eng := &app.Engine{
 		Connection: conn,
 		UI:         terminal,
 		Processor: app.Chain(

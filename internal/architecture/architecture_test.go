@@ -57,10 +57,6 @@ const (
 	// implementations or the runtime.
 	CategoryWorld Category = "world"
 
-	// CategoryEngine is the engine that pumps batches between endpoints.
-	// May import the abstract core, contracts, and libraries.
-	CategoryEngine Category = "engine"
-
 	// CategoryCmd is the binary entry point. May import everything.
 	CategoryCmd Category = "cmd"
 )
@@ -85,8 +81,6 @@ func classify(importPath string) Category {
 		return CategoryProcessors
 	case strings.HasPrefix(rel, "worlds/"):
 		return CategoryWorld
-	case rel == "engine":
-		return CategoryEngine
 	case strings.HasPrefix(rel, "cmd/"):
 		return CategoryCmd
 	case strings.HasPrefix(rel, "internal/"):
@@ -108,10 +102,9 @@ var allowed = map[Category][]Category{
 	CategoryEndpoint:   {CategoryApp, CategoryContract, CategoryLib},
 	CategoryProcessors: {CategoryApp, CategoryContract, CategoryLib, CategoryCodec},
 	CategoryWorld:      {CategoryApp, CategoryContract, CategoryLib, CategoryCodec, CategoryProcessors},
-	CategoryEngine:     {CategoryApp, CategoryContract, CategoryLib},
 	CategoryCmd: {
 		CategoryApp, CategoryContract, CategoryLib, CategoryCodec,
-		CategoryEndpoint, CategoryProcessors, CategoryWorld, CategoryEngine,
+		CategoryEndpoint, CategoryProcessors, CategoryWorld,
 	},
 }
 

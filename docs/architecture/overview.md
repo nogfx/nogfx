@@ -31,10 +31,11 @@ nogfx/
     processor.go       — Processor signature + Chain composer
     event.go           — Event interface + EventMarker
     command.go         — Command interface + CommandMarker
+    endpoint.go        — Endpoint interface satisfied by every platform impl
+    engine.go          — pumps batches between endpoints
   connection/          — contract for the network endpoint
     events.go          — TextLine, Prompt, TelnetCommand, GMCPFrame, StateChanged
     commands.go        — Send, Reconnect, Disconnect
-    connection.go      — Connection port interface
     iac.go             — IAC byte sequences (WillEcho, WontEcho, WillGMCP)
   ui/                  — contract for the user-facing endpoint
     events.go          — Input, Resize
@@ -42,10 +43,7 @@ nogfx/
                          RemoveVital, SetCharacter, SetTarget, SetRoom,
                          MaskInput, UnmaskInput
     snapshots.go       — Target snapshot
-    ui.go              — UI port interface
-  engine/              — pumps batches between endpoints
-    engine.go
-  platform/            — substrate adapters; implement endpoint ports
+  platform/            — substrate adapters; implement app.Endpoint
     telnet/            — Connection implementation; tokenisation
     gmcp/              — typed GMCP messages (parse / marshal)
     tui/               — UI implementation (tcell)
@@ -70,7 +68,6 @@ Dependency direction. These rules are enforced by [`internal/architecture/archit
 | `endpoint` | `platform/telnet`, `platform/tui` | `app`, `contract`, `lib` |
 | `processors` | `processors` | `app`, `contract`, `lib`, `codec` |
 | `world` | `worlds/*` | `app`, `contract`, `lib`, `codec`, `processors` |
-| `engine` | `engine` | `app`, `contract`, `lib` |
 | `cmd` | `cmd/*` | everything (composition root) |
 
 Same-category imports are always allowed (e.g. `platform/gmcp/achaea` may import `platform/gmcp`).
@@ -82,7 +79,7 @@ Notes on what each rule expresses:
 - **The codec (`platform/gmcp`) does not import an endpoint.** GMCP messages are pure data; the wire transport (telnet) is separate. Worlds and processors can decode GMCP without dragging in telnet.
 - **Endpoints do not import each other.** `platform/telnet` and `platform/tui` are siblings; if telnet ever needed to know about the UI it would mean we'd put logic in the wrong place.
 - **Worlds do not import endpoints or the engine.** A world is just a `Processor` that runs against the contracts; it cannot reach down into a specific transport implementation or up into the engine wiring.
-- **The engine does not import endpoints.** The engine wires contracts together, not specific transports. `cmd/nogfx/main.go` is the only place that knows which endpoint implementations are in use.
+- **`app/` defines a single `Endpoint` interface** that both telnet and tui satisfy structurally. The Engine references it directly, so the abstract pipeline core stays free of in-project imports while still owning the engine wiring. `cmd/nogfx/main.go` is the only place that knows which concrete endpoint implementations are in use.
 - `worlds/*` imports `app/`, `connection/`, `ui/`, `platform/gmcp`, `processors/`, `lib/*`. Same reasoning as processors: a world emits both server commands (Send) and UI commands.
 - `cmd/nogfx/main.go` imports everything and wires it together.
 

@@ -1,13 +1,9 @@
-package engine
+package app
 
 import (
 	"context"
 	"errors"
 	"log"
-
-	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/ui"
 )
 
 // Engine is the orchestrator of all the cogs of this machinery. It pumps
@@ -15,9 +11,9 @@ import (
 // batches, and routes the resulting commands back to the endpoint that
 // handles them.
 type Engine struct {
-	Connection connection.Connection
-	UI         ui.UI
-	Processor  app.Processor
+	Connection Endpoint
+	UI         Endpoint
+	Processor  Processor
 }
 
 // Run starts the engine and blocks until ctx is cancelled or one of the
@@ -26,7 +22,7 @@ func (engine *Engine) Run(pctx context.Context) error {
 	ctx, cancel := context.WithCancel(pctx)
 	defer cancel()
 
-	events := make(chan app.Event, 64)
+	events := make(chan Event, 64)
 	errs := make(chan error, 2)
 
 	go func() {
@@ -59,8 +55,8 @@ func (engine *Engine) Run(pctx context.Context) error {
 	}
 }
 
-func (engine *Engine) processEvent(ev app.Event) {
-	batch := app.Batch{Events: []app.Event{ev}}
+func (engine *Engine) processEvent(ev Event) {
+	batch := Batch{Events: []Event{ev}}
 
 	if engine.Processor != nil {
 		next, err := engine.Processor(batch)
@@ -74,17 +70,17 @@ func (engine *Engine) processEvent(ev app.Event) {
 	engine.dispatch(batch)
 }
 
-func (engine *Engine) dispatch(batch app.Batch) {
+func (engine *Engine) dispatch(batch Batch) {
 	for _, cmd := range batch.Commands {
 		if err := engine.Connection.Apply(cmd); err == nil {
 			continue
-		} else if !errors.Is(err, app.ErrCommandNotApplicable) {
+		} else if !errors.Is(err, ErrCommandNotApplicable) {
 			log.Printf("connection apply (%T): %v", cmd, err)
 			continue
 		}
 		if err := engine.UI.Apply(cmd); err == nil {
 			continue
-		} else if !errors.Is(err, app.ErrCommandNotApplicable) {
+		} else if !errors.Is(err, ErrCommandNotApplicable) {
 			log.Printf("ui apply (%T): %v", cmd, err)
 			continue
 		}

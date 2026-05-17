@@ -1,4 +1,4 @@
-package engine_test
+package app_test
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/nogfx/nogfx/app"
 	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/engine"
 	"github.com/nogfx/nogfx/ui"
 )
 
@@ -120,7 +119,7 @@ func runEngine(t *testing.T, conn *fakeConn, gui *fakeUI, proc app.Processor, ex
 
 	done := make(chan error, 1)
 	go func() {
-		e := &engine.Engine{
+		e := &app.Engine{
 			Connection: conn,
 			UI:         gui,
 			Processor:  proc,
@@ -214,7 +213,7 @@ func TestEngine_UnknownCommandIsLoggedNotPanic(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		e := &engine.Engine{Connection: conn, UI: gui, Processor: proc}
+		e := &app.Engine{Connection: conn, UI: gui, Processor: proc}
 		done <- e.Run(ctx)
 	}()
 
@@ -247,7 +246,7 @@ func TestEngine_PropagatesConnectionError(t *testing.T) {
 	conn := &fakeFailingConn{err: boom}
 	gui := newFakeUI()
 
-	e := &engine.Engine{Connection: conn, UI: gui, Processor: nil}
+	e := &app.Engine{Connection: conn, UI: gui, Processor: nil}
 	err := e.Run(context.Background())
 	assert.ErrorIs(t, err, boom)
 }
