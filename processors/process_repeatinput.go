@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"strconv"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
 )
 
 // RepeatInputProcessor expands each connection.Send command whose bytes start

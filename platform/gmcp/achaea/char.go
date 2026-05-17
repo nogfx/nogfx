@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/platform/gmcp"
 
 	"github.com/icza/gox/gox"
 )

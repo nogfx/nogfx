@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	agmcp "github.com/tobiassjosten/nogfx/platform/gmcp/achaea"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
 
 	"github.com/stretchr/testify/assert"
 )

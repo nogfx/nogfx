@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/tobiassjosten/nogfx/platform/tui"
+	"github.com/nogfx/nogfx/platform/tui"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"

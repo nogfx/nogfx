@@ -7,9 +7,9 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/lib/navigation"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/ui"
 )
 
 // TUI orchestrates different panes to make up the primary user interface.

@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
 )
 
 // TestEventsSatisfyAppEvent guards against accidentally dropping the

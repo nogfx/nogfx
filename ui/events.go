@@ -4,7 +4,7 @@
 // in platform/.
 package ui
 
-import "github.com/tobiassjosten/nogfx/app"
+import "github.com/nogfx/nogfx/app"
 
 // Input is one line the user submitted (typically after pressing enter; the
 // UI buffers keystrokes locally and emits Input when the line is complete).

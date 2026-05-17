@@ -3,7 +3,7 @@ package connection
 import (
 	"context"
 
-	"github.com/tobiassjosten/nogfx/app"
+	"github.com/nogfx/nogfx/app"
 )
 
 // Connection is the port for the network endpoint. An implementation runs in

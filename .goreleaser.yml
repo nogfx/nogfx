@@ -15,11 +15,11 @@ brews:
   - name: nogfx
     license: "MIT"
     tap:
-      owner: tobiassjosten
+      owner: nogfx
       name: homebrew-nogfx
       token: "{{ .Env.GORELEASER_GITHUB_TOKEN }}"
     # yamllint disable-line rule:line-length
-    url_template: "https://github.com/tobiassjosten/nogfx/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    url_template: "https://github.com/nogfx/nogfx/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     commit_msg_template: "Update brew formula: {{ .ProjectName }} {{ .Tag }}"
     commit_author:
       name: "{{ .Env.GORELEASER_COMMIT_NAME }}"

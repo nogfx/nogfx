@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/worlds/achaea"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/worlds/achaea"
 )
 
 // send is a small helper that wraps a Send command.

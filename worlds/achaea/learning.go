@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/lib/simpex"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/lib/simpex"
 )
 
 // maxLessons is the cap on lessons that can be learnt in a single session,

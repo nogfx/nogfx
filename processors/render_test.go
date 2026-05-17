@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	"github.com/tobiassjosten/nogfx/processors"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/processors"
+	"github.com/nogfx/nogfx/ui"
 )
 
 func TestRender_CharName(t *testing.T) {

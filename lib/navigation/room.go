@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/icza/gox/gox"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/platform/gmcp"
 )
 
 // @todo Encapsulate in a struct, so as to avoid polluting global space.

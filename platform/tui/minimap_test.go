@@ -9,8 +9,8 @@ import (
 	"github.com/icza/gox/gox"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tobiassjosten/nogfx/lib/navigation"
-	uipkg "github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/lib/navigation"
+	uipkg "github.com/nogfx/nogfx/ui"
 )
 
 func TestRenderTUIMap(t *testing.T) {

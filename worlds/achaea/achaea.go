@@ -8,16 +8,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/pkg"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	agmcp "github.com/tobiassjosten/nogfx/platform/gmcp/achaea"
-	igmcp "github.com/tobiassjosten/nogfx/platform/gmcp/ironrealms"
-	"github.com/tobiassjosten/nogfx/lib/navigation"
-	"github.com/tobiassjosten/nogfx/processors"
-	"github.com/tobiassjosten/nogfx/platform/telnet"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/pkg"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
+	igmcp "github.com/nogfx/nogfx/platform/gmcp/ironrealms"
+	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/processors"
+	"github.com/nogfx/nogfx/platform/telnet"
+	"github.com/nogfx/nogfx/ui"
 )
 
 type world struct {

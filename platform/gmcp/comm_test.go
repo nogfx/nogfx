@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/platform/gmcp"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

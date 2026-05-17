@@ -6,11 +6,11 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/tobiassjosten/nogfx/lib/navigation"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	agmcp "github.com/tobiassjosten/nogfx/platform/gmcp/achaea"
-	igmcp "github.com/tobiassjosten/nogfx/platform/gmcp/ironrealms"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
+	igmcp "github.com/nogfx/nogfx/platform/gmcp/ironrealms"
+	"github.com/nogfx/nogfx/ui"
 )
 
 // Target represents who or what is being targeted for skills and attacks.

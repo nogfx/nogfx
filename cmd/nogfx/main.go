@@ -12,12 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/pkg"
-	"github.com/tobiassjosten/nogfx/worlds/achaea"
-	"github.com/tobiassjosten/nogfx/platform/telnet"
-	"github.com/tobiassjosten/nogfx/platform/tui"
-	"github.com/tobiassjosten/nogfx/processors"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/pkg"
+	"github.com/nogfx/nogfx/worlds/achaea"
+	"github.com/nogfx/nogfx/platform/telnet"
+	"github.com/nogfx/nogfx/platform/tui"
+	"github.com/nogfx/nogfx/processors"
 
 	"github.com/gdamore/tcell/v2"
 	"golang.org/x/net/idna"

@@ -1,6 +1,6 @@
 package connection
 
-import "github.com/tobiassjosten/nogfx/app"
+import "github.com/nogfx/nogfx/app"
 
 // Send writes bytes to the wire.
 type Send struct {

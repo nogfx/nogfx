@@ -3,8 +3,8 @@ package processors
 import (
 	"bytes"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
 )
 
 // SplitInputProcessor splits each connection.Send command on the given

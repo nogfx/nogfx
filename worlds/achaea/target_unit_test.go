@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tobiassjosten/nogfx/worlds/achaea"
+	"github.com/nogfx/nogfx/worlds/achaea"
 )
 
 // TestTargetingLogic exercises the auto-retarget machinery on Target

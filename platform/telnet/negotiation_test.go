@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/tobiassjosten/nogfx/platform/telnet"
+	"github.com/nogfx/nogfx/platform/telnet"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tobiassjosten/nogfx/platform/tui"
+	"github.com/nogfx/nogfx/platform/tui"
 
 	"github.com/gdamore/tcell/v2"
 )

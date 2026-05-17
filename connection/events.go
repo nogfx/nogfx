@@ -3,7 +3,7 @@
 // of the connection (e.g. telnet) live in platform/.
 package connection
 
-import "github.com/tobiassjosten/nogfx/app"
+import "github.com/nogfx/nogfx/app"
 
 // TextLine is one paragraph of output text received from the server.
 type TextLine struct {

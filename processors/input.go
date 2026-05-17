@@ -1,9 +1,9 @@
 package processors
 
 import (
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/ui"
 )
 
 // Input converts each ui.Input event in the batch into a connection.Send

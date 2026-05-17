@@ -7,8 +7,8 @@ import (
 
 	"github.com/icza/gox/gox"
 	"github.com/stretchr/testify/assert"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	"github.com/tobiassjosten/nogfx/platform/telnet"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/platform/telnet"
 )
 
 func makeGMCP(id string, data interface{}) string {

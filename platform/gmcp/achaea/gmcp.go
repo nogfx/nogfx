@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	"github.com/tobiassjosten/nogfx/platform/gmcp/ironrealms"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/platform/gmcp/ironrealms"
 )
 
 var messages = map[string]func() gmcp.Message{

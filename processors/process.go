@@ -7,7 +7,7 @@
 // their chain.
 package processors
 
-import "github.com/tobiassjosten/nogfx/app"
+import "github.com/nogfx/nogfx/app"
 
 // Processor is a convenience alias for app.Processor so callers can spell
 // the type as processors.Processor where it reads more naturally.

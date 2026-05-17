@@ -1,10 +1,10 @@
 package processors
 
 import (
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/lib/navigation"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/ui"
 )
 
 // Render translates baseline typed GMCP message events (those emitted by

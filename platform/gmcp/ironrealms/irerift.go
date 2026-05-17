@@ -1,6 +1,6 @@
 package ironrealms
 
-import "github.com/tobiassjosten/nogfx/platform/gmcp"
+import "github.com/nogfx/nogfx/platform/gmcp"
 
 // IRERiftItem is an item in rift storage.
 type IRERiftItem struct {

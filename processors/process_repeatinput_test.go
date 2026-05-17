@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/processors"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/processors"
 )
 
 func TestRepeatInputProcessor(t *testing.T) {

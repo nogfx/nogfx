@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tobiassjosten/nogfx/platform/telnet"
+	"github.com/nogfx/nogfx/platform/telnet"
 )
 
 // ErrUnknownMessage is returned by Parse when the GMCP payload's message ID

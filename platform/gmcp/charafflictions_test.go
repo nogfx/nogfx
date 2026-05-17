@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/platform/gmcp"
 )
 
 func TestCharAfflictionsMessages(t *testing.T) {

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"log"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/platform/gmcp"
 )
 
 // DecodedGMCP is an event carrying a typed GMCP message that the Decode

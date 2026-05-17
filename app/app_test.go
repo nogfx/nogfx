@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tobiassjosten/nogfx/app"
+	"github.com/nogfx/nogfx/app"
 )
 
 type fakeEvent struct {

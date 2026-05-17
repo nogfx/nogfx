@@ -3,7 +3,7 @@ package ui
 import (
 	"context"
 
-	"github.com/tobiassjosten/nogfx/app"
+	"github.com/nogfx/nogfx/app"
 )
 
 // UI is the port for the user-facing endpoint. An implementation runs in its

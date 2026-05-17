@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/lib/navigation"
 )
 
 // PrintLine appends a line to the user-facing scrollback.

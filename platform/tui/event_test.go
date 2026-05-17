@@ -6,8 +6,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/tobiassjosten/nogfx/app"
-	uipkg "github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	uipkg "github.com/nogfx/nogfx/ui"
 )
 
 func TestHandleEvent(t *testing.T) {

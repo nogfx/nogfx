@@ -1,8 +1,8 @@
 package achaea
 
 import (
-	"github.com/tobiassjosten/nogfx/platform/gmcp"
-	agmcp "github.com/tobiassjosten/nogfx/platform/gmcp/achaea"
+	"github.com/nogfx/nogfx/platform/gmcp"
+	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
 )
 
 // Character is the currently logged in character.

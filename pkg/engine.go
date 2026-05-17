@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
-	"github.com/tobiassjosten/nogfx/ui"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/ui"
 )
 
 // Engine is the orchestrator of all the cogs of this machinery. It pumps

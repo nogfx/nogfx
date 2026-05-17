@@ -7,8 +7,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/tobiassjosten/nogfx/app"
-	"github.com/tobiassjosten/nogfx/connection"
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/connection"
 )
 
 // Run reads from the underlying transport, tokenises bytes into typed
