@@ -58,15 +58,30 @@ nogfx/
     navigation/        — graph and pathfinding
 ```
 
-Dependency direction:
+Dependency direction. These rules are enforced by [`internal/architecture/architecture_test.go`](../../internal/architecture/architecture_test.go), which classifies each package by path and verifies its imports against an allow-list. The categories below match the constants defined there.
 
-- `app/` imports nothing else in the project — only the abstract pipeline, processor, event-, and command-interface shapes. It knows nothing about specific endpoints or their vocabularies.
-- `connection/` and `ui/` import `app/` to satisfy the `Event` and `Command` interfaces. They do **not** import each other — that's the decoupling that lets either endpoint evolve independently.
-- `lib/*` imports nothing else in the project.
-- `platform/telnet` implements the `connection.Connection` port and imports only `app/`, `connection/`, and `lib/*`. It does not import `ui/`, `processors/`, `worlds/`, or other platform packages.
-- `platform/tui` implements the `ui.UI` port and imports only `app/`, `ui/`, and `lib/*`. Symmetric to telnet — does not import `connection/` or anything else.
-- `platform/gmcp` imports `app/` (so its message types can implement `app.Event`) and `lib/*`.
-- `processors/` imports `app/`, `connection/`, `ui/`, `platform/gmcp`, `lib/*`. Generic processors translate between the two endpoint vocabularies, so they need both.
+| Category | Packages | May import |
+| --- | --- | --- |
+| `app` | `app` | nothing else in the project |
+| `lib` | `lib/*` | nothing else in the project |
+| `contract` | `connection`, `ui` | `app`, `lib` |
+| `codec` | `platform/gmcp`, `platform/gmcp/*` | `lib` |
+| `endpoint` | `platform/telnet`, `platform/tui` | `app`, `contract`, `lib` |
+| `processors` | `processors` | `app`, `contract`, `lib`, `codec` |
+| `world` | `worlds/*` | `app`, `contract`, `lib`, `codec`, `processors` |
+| `runtime` | `pkg` | `app`, `contract`, `lib` |
+| `cmd` | `cmd/*` | everything (composition root) |
+
+Same-category imports are always allowed (e.g. `platform/gmcp/achaea` may import `platform/gmcp`).
+
+Notes on what each rule expresses:
+
+- **`app` and `lib` are leaves.** They depend on nothing in the project so that either can be extracted as a separate module without dragging the rest along.
+- **Contracts (`connection`, `ui`) do not import each other.** Each endpoint's contract is independent, so adding a UI capability does not affect the connection package and vice versa.
+- **The codec (`platform/gmcp`) does not import an endpoint.** GMCP messages are pure data; the wire transport (telnet) is separate. Worlds and processors can decode GMCP without dragging in telnet.
+- **Endpoints do not import each other.** `platform/telnet` and `platform/tui` are siblings; if telnet ever needed to know about the UI it would mean we'd put logic in the wrong place.
+- **Worlds do not import endpoints or the runtime.** A world is just a `Processor` that runs against the contracts; it cannot reach down into a specific transport implementation or up into the engine wiring.
+- **The runtime (`pkg`) does not import endpoints.** The engine wires contracts together, not specific transports. `cmd/nogfx/main.go` is the only place that knows which endpoint implementations are in use.
 - `worlds/*` imports `app/`, `connection/`, `ui/`, `platform/gmcp`, `processors/`, `lib/*`. Same reasoning as processors: a world emits both server commands (Send) and UI commands.
 - `cmd/nogfx/main.go` imports everything and wires it together.
 
