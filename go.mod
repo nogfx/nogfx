@@ -1,6 +1,6 @@
 module github.com/nogfx/nogfx
 
-go 1.18
+go 1.23
 
 require (
 	github.com/gdamore/tcell/v2 v2.5.1

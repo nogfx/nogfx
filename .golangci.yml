@@ -1,0 +1,60 @@
+---
+# golangci-lint configuration (v2 schema). Keep the set tight — only
+# checks that catch real bugs or enforce a consistent style, not
+# stylistic preferences.
+# https://golangci-lint.run/usage/configuration/
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    # Catch unchecked errors beyond what errcheck flags by default.
+    - errorlint
+    # Detect concurrency bugs (e.g. range-loop variable capture, mutex
+    # passed by value).
+    - copyloopvar
+    # Common security mistakes (string-as-credential, unbounded reads,
+    # unsafe path joins).
+    - gosec
+    # Misspellings in identifiers and comments.
+    - misspell
+    # Slices that could be preallocated.
+    - prealloc
+    # Unnecessary type conversions.
+    - unconvert
+    # Unused parameters in exported APIs — useful when refactoring port
+    # signatures.
+    - unparam
+    # Catch context.WithCancel etc. without a deferred cancel.
+    - contextcheck
+
+  settings:
+    gosec:
+      excludes:
+        # G104 (audit errors): errcheck already covers this and is more
+        # configurable.
+        - G104
+
+  exclusions:
+    rules:
+      # Tests legitimately have unparam-flaggable helpers, unchecked
+      # mock returns, and aren't perf-sensitive enough to warrant
+      # preallocation tweaks.
+      - path: _test\.go
+        linters:
+          - unparam
+          - errcheck
+          - gosec
+          - prealloc
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/nogfx/nogfx
