@@ -126,7 +126,7 @@ func run(address string) error {
 
 	switch address {
 	case "achaea.com:23", "50.31.100.8:23":
-		processor, err := achaea.Processor()
+		processor, err := achaea.Processor(filepath.Join(pkg.Directory, "logs"))
 		if err != nil {
 			return fmt.Errorf("failed to create Achaea processor: %w", err)
 		}

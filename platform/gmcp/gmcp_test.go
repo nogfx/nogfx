@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nogfx/nogfx/platform/gmcp"
-	"github.com/nogfx/nogfx/platform/telnet"
 )
 
 func makeGMCP(id string, data interface{}) string {
@@ -246,20 +245,6 @@ func TestParse(t *testing.T) {
 			assert.Equal(t, tc.msgs, msgs)
 		})
 	}
-}
-
-func TestWrap(t *testing.T) {
-	var (
-		gmcpPrefix = []byte{telnet.IAC, telnet.SB, telnet.GMCP}
-		gmcpSuffix = []byte{telnet.IAC, telnet.SE}
-	)
-
-	data := []byte("asdf")
-	assert.Equal(t, data, gmcp.Unwrap(gmcp.Wrap(data)))
-
-	assert.Nil(t, gmcp.Unwrap(append(data, gmcpSuffix...)))
-	assert.Nil(t, gmcp.Unwrap(append(gmcpPrefix, data...)))
-	assert.NotNil(t, gmcp.Unwrap(append(append(gmcpPrefix, data...), gmcpSuffix...)))
 }
 
 func TestSplitRank(t *testing.T) {

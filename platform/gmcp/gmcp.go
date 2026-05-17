@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/nogfx/nogfx/platform/telnet"
 )
 
 // ErrUnknownMessage is returned by Parse when the GMCP payload's message ID
@@ -83,29 +81,6 @@ func Parse(data []byte) (Message, error) {
 	}
 
 	return msg, nil
-}
-
-var (
-	gmcpPrefix = []byte{telnet.IAC, telnet.SB, telnet.GMCP}
-	gmcpSuffix = []byte{telnet.IAC, telnet.SE}
-)
-
-// Wrap embeds a GMCP message in a telnet negotiation sequence.
-func Wrap(data []byte) []byte {
-	return append(append(gmcpPrefix, data...), gmcpSuffix...)
-}
-
-// Unwrap removes telnet control codes from a GMCP message. Returns nil if the
-// command actually isn't a GMCP message.
-func Unwrap(data []byte) []byte {
-	if !bytes.HasPrefix(data, gmcpPrefix) {
-		return nil
-	}
-	if !bytes.HasSuffix(data, gmcpSuffix) {
-		return nil
-	}
-
-	return data[len(gmcpPrefix) : len(data)-len(gmcpSuffix)]
 }
 
 // Marshal converts a Message to JSON data.

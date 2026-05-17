@@ -2,10 +2,6 @@ package navigation
 
 import (
 	"strings"
-
-	"github.com/icza/gox/gox"
-
-	"github.com/nogfx/nogfx/platform/gmcp"
 )
 
 // @todo Encapsulate in a struct, so as to avoid polluting global space.
@@ -44,46 +40,30 @@ type Room struct {
 	Exits map[string]*Room
 }
 
-// RoomFromGMCP creates a Room from a GMCP Room.Info message.
-func RoomFromGMCP(msg *gmcp.RoomInfo) *Room {
-	room, ok := rooms[msg.Number]
-	if ok && room.Known {
-		return room
-	} else if !ok {
-		room = &Room{ID: msg.Number}
-		rooms[msg.Number] = room
+// LookupOrCreateRoom returns the canonical Room with the given id from the
+// cache, creating an empty one if none exists. The returned bool is true if
+// the room already existed.
+func LookupOrCreateRoom(id int) (*Room, bool) {
+	if r, ok := rooms[id]; ok {
+		return r, true
 	}
+	r := &Room{ID: id}
+	rooms[id] = r
+	return r, false
+}
 
-	room.Name = msg.Name
-	room.X = gox.NewInt(msg.X)
-	room.Y = gox.NewInt(msg.Y)
-	room.Known = true
-
-	if msg.Exits != nil {
-		room.Exits = map[string]*Room{}
-
-		for direction, number := range msg.Exits {
-			adjacent, ok := rooms[number]
-			if !ok {
-				adjacent = &Room{ID: number}
-				rooms[number] = adjacent
-			}
-
-			room.Exits[direction] = adjacent
-		}
+// LookupOrCreateArea returns the canonical Area for the given id, creating
+// one with the supplied name if none exists. id=0 returns nil (no area).
+func LookupOrCreateArea(id int, name string) *Area {
+	if id == 0 {
+		return nil
 	}
-
-	area, ok := areas[msg.AreaNumber]
-	if !ok && msg.AreaNumber != 0 {
-		area = &Area{
-			ID:   msg.AreaNumber,
-			Name: msg.AreaName,
-		}
-		areas[msg.AreaNumber] = area
+	if a, ok := areas[id]; ok {
+		return a
 	}
-	room.Area = area
-
-	return room
+	a := &Area{ID: id, Name: name}
+	areas[id] = a
+	return a
 }
 
 // HasExit determines whether the room has a specific exit or not. It supports

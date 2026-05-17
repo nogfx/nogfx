@@ -18,7 +18,7 @@ import (
 func runTV(t *testing.T, events ...app.Event) []string {
 	t.Helper()
 
-	w, err := achaea.New()
+	w, err := achaea.New(t.TempDir())
 	require.NoError(t, err)
 
 	// The rewrite processor is exposed indirectly through Pre(); the

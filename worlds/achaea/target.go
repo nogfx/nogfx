@@ -190,7 +190,7 @@ outer:
 
 // FromRoomInfo handles targeting when moving between rooms (areas, in effect).
 func (tgt *Target) FromRoomInfo(msg *gmcp.RoomInfo) {
-	room := navigation.RoomFromGMCP(msg)
+	room := msg.AsNavigation()
 	if room == nil || room.Area == nil {
 		return
 	}

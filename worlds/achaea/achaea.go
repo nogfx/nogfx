@@ -5,17 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"path/filepath"
 	"time"
 
 	"github.com/nogfx/nogfx/app"
 	"github.com/nogfx/nogfx/connection"
 	"github.com/nogfx/nogfx/lib/navigation"
-	"github.com/nogfx/nogfx/pkg"
 	"github.com/nogfx/nogfx/platform/gmcp"
 	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
 	igmcp "github.com/nogfx/nogfx/platform/gmcp/ironrealms"
-	"github.com/nogfx/nogfx/platform/telnet"
 	"github.com/nogfx/nogfx/processors"
 	"github.com/nogfx/nogfx/ui"
 )
@@ -40,9 +37,9 @@ type World struct {
 }
 
 // New constructs an Achaea World, opening per-session raw and processed log
-// files. New takes no UI or Connection references — everything the world
-// does flows through the batch's events and commands.
-func New() (*World, error) {
+// files inside logDir. New takes no UI or Connection references —
+// everything the world does flows through the batch's events and commands.
+func New(logDir string) (*World, error) {
 	state := &world{
 		Character: &Character{},
 		Target:    NewTarget(),
@@ -51,7 +48,7 @@ func New() (*World, error) {
 	now := time.Now().Format("20060102-150405")
 
 	rawLog, err := processors.LogProcessor(
-		filepath.Join(pkg.Directory, "logs"),
+		logDir,
 		fmt.Sprintf("achaea.com-%s.raw.log", now),
 	)
 	if err != nil {
@@ -59,7 +56,7 @@ func New() (*World, error) {
 	}
 
 	out, err := processors.LogProcessor(
-		filepath.Join(pkg.Directory, "logs"),
+		logDir,
 		fmt.Sprintf("achaea.com-%s.log", now),
 	)
 	if err != nil {
@@ -116,8 +113,8 @@ func (w *World) Chain(scripts ...app.Processor) app.Processor {
 // Processor is a back-compatible shim that returns the full Pre+Post chain
 // with no scripts inserted. Callers that want script support should call
 // New and Chain directly.
-func Processor() (processors.Processor, error) {
-	w, err := New()
+func Processor(logDir string) (processors.Processor, error) {
+	w, err := New(logDir)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +147,7 @@ func (world *world) cmdprocess(batch app.Batch) (app.Batch, error) {
 	for _, ev := range batch.Events {
 		switch ev := ev.(type) {
 		case connection.TelnetCommand:
-			if bytes.Equal(ev.Bytes, telnet.IACWillGMCP) {
+			if bytes.Equal(ev.Bytes, connection.IACWillGMCP) {
 				batch = batch.AppendCommand(connection.Send{
 					Bytes: []byte((&gmcp.CoreSupportsSet{
 						"Char":         1,
@@ -227,7 +224,7 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 		if world.Room != nil {
 			world.Room.HasPlayer = false
 		}
-		world.Room = navigation.RoomFromGMCP(msg)
+		world.Room = msg.AsNavigation()
 		world.Room.HasPlayer = true
 		batch = batch.AppendCommand(ui.SetRoom{Room: world.Room})
 

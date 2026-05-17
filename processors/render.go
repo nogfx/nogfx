@@ -2,7 +2,6 @@ package processors
 
 import (
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/lib/navigation"
 	"github.com/nogfx/nogfx/platform/gmcp"
 	"github.com/nogfx/nogfx/ui"
 )
@@ -16,7 +15,7 @@ import (
 // What Render handles today:
 //
 //   - gmcp.CharName  → ui.SetCharacter
-//   - gmcp.RoomInfo  → ui.SetRoom (constructed via navigation.RoomFromGMCP)
+//   - gmcp.RoomInfo  → ui.SetRoom (constructed via msg.AsNavigation)
 //
 // The generic GMCP vocabulary does not specify a vitals message, so health
 // and mana commands are emitted by the world layer (Achaea uses its richer
@@ -36,7 +35,7 @@ func Render() app.Processor {
 				})
 
 			case *gmcp.RoomInfo:
-				room := navigation.RoomFromGMCP(msg)
+				room := msg.AsNavigation()
 				if room != nil {
 					room.HasPlayer = true
 				}
