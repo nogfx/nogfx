@@ -82,18 +82,20 @@ Most events implement nothing extra. `GuardedEvent` is the exception, not the no
 
 ## TunnelVision as the worked example
 
-After the foundations land, TunnelVision becomes:
+TunnelVision is the first feature built on the foundations:
 
-1. On a live `connection.TextLine`, classify; if active, suppress / consolidate; emit `ui.PrintLine{Line}` (in either raw or formatted form depending on state).
-2. On toggle, emit `ui.ReFormat{}`.
-3. On `ui.ReFormatting{Line}`, reuse the same classifier; emit `ui.PrintLine{Line{Raw, Formatted, ID}}` with the new formatting and the same ID.
+1. On a live `connection.TextLine`, classify; attack and modifier lines accumulate in the processor's struct (cross-batch state) and the trigger event is nilled out; any other classification ends the run and a `ui.PrintLine` carrying the consolidated summary is appended to the batch's commands, so it lands in scrollback just before whatever line ended the run. `connection.Prompt` is also a flush trigger; interleaved GMCP frames (typical during a flurry) intentionally are not.
+2. On toggle, emit `ui.ReFormat{}` — *not yet wired*; no toggle UX exists.
+3. On `ui.ReFormatting{Line}`, reuse the same classifier; emit `ui.PrintLine{Line{Raw, Formatted, ID}}` with the new formatting and the same ID — *not yet implemented for TunnelVision*.
 
-The classifier is shared between the live path and the reformat path. Attack consolidation — currently dropped because the per-event refactor couldn't keep state across batches cleanly — comes back here naturally: when reformatting, the processor sees the whole sequence of recent attack-tagged lines as it drains the queue.
+Cross-line consolidation in the reformat path is the open question. Live consolidation collapses N attack/modifier lines into one summary slot; the original raw bytes for the suppressed lines aren't preserved, so a toggle-off cannot reconstruct them. The reformat primitives overwrite a slot by ID but cannot delete or split slots, so reversing a live consolidation needs either richer primitives (delete) or a different live strategy (keep each line as its own slot and use the round-trip to compact in-place). That decision can wait until the toggle UX motivates it.
 
 ## Sequencing
 
-1. Wrap the in-progress refactor (World API → `Processors()`, main.go composition). Touches the same emitters that step 2 will.
-2. Foundation: introduce `ui.Line`; change `ui.PrintLine` to carry it; update every emitter to populate `Raw` and `Formatted` (initially the same). UI assigns IDs on receive.
-3. Round-trip: add `ui.ReFormat` (with scope) and `ui.ReFormatting` event. Wire the tui adapter to replay scrollback when `ReFormat` is applied.
-4. Guard: add `app.GuardedEvent`, post-chain check in the engine, `ReFormatting.Forbids(ReFormat) == true`.
-5. Restore TunnelVision attack consolidation through the round-trip, validating the design end-to-end.
+The foundations and live TunnelVision consolidation have landed; remaining work is the toggle UX and TunnelVision's reformat-path handling. The original roadmap, for context:
+
+1. Wrap the in-progress refactor (World API → `Processors()`, main.go composition). Touches the same emitters that step 2 will. *Done.*
+2. Foundation: introduce `ui.Line`; change `ui.PrintLine` to carry it; update every emitter to populate `Raw` and `Formatted` (initially the same). UI assigns IDs on receive. *Done.*
+3. Round-trip: add `ui.ReFormat` and `ui.ReFormatting` event. Wire the tui adapter to replay scrollback when `ReFormat` is applied. *Done.*
+4. Guard: add `app.GuardedEvent`, post-chain check in the engine, `ReFormatting.Forbids(ReFormat) == true`. *Done.*
+5. Restore TunnelVision attack consolidation. *Done in the live path*; the reformat-path handling is deferred (see worked-example notes above).
