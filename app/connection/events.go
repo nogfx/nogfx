@@ -38,3 +38,23 @@ type StateChanged struct {
 	Connected bool
 	Err       error
 }
+
+// Message is one turn's worth of server output: every TextLine and
+// GMCPFrame received since the previous Prompt, plus the Prompt that
+// closed the turn. Message is a *derived* event the Aggregator
+// processor emits — the raw events still flow through the chain as
+// today. Game-logic processors that want the turn as a unit (TunnelVision
+// rewrite, illusion detection, misframing splitter) consume Message;
+// processors that operate per-event (raw log, output renderer, GMCP
+// state updaters) keep consuming the underlying events.
+//
+// Orphan GMCP frames — those arriving with no closing prompt — buffer
+// inside the Aggregator until the next Prompt eventually fires, at
+// which point they join that prompt's Message. See
+// docs/design/messages.md for the full rationale.
+type Message struct {
+	app.EventMarker
+	Lines  []TextLine
+	GMCP   []GMCPFrame
+	Prompt Prompt
+}
