@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/ui"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/app/ui"
 )
 
 // fakeConn is a Connection that emits a configurable script of events and
@@ -155,10 +155,8 @@ func TestEngine_RoutesConnectionCommandsToConnection(t *testing.T) {
 
 	// A processor that turns ui.Input into a connection.Send.
 	proc := func(b app.Batch) (app.Batch, error) {
-		for _, ev := range b.Events {
-			if in, ok := ev.(ui.Input); ok {
-				b = b.AppendCommand(connection.Send{Bytes: in.Bytes})
-			}
+		if in, ok := b.Event.(ui.Input); ok {
+			b = b.AppendCommand(connection.Send{Bytes: in.Bytes})
 		}
 		return b, nil
 	}
@@ -175,10 +173,8 @@ func TestEngine_RoutesUICommandsToUI(t *testing.T) {
 	gui := newFakeUI()
 
 	proc := func(b app.Batch) (app.Batch, error) {
-		for _, ev := range b.Events {
-			if tl, ok := ev.(connection.TextLine); ok {
-				b = b.AppendCommand(ui.PrintLine{Text: tl.Bytes})
-			}
+		if tl, ok := b.Event.(connection.TextLine); ok {
+			b = b.AppendCommand(ui.PrintLine{Line: ui.Line{Raw: tl.Bytes, Formatted: tl.Bytes}})
 		}
 		return b, nil
 	}
@@ -186,7 +182,7 @@ func TestEngine_RoutesUICommandsToUI(t *testing.T) {
 	runEngine(t, conn, gui, proc, 1)
 
 	require.Len(t, gui.Applied(), 1)
-	assert.Equal(t, []byte("server says hi"), gui.Applied()[0].(ui.PrintLine).Text)
+	assert.Equal(t, []byte("server says hi"), gui.Applied()[0].(ui.PrintLine).Line.Formatted)
 	assert.Empty(t, conn.Applied(), "UI commands must not reach the connection")
 }
 

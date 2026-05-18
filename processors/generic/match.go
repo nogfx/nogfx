@@ -1,11 +1,11 @@
-package processors
+package generic
 
 import (
 	"fmt"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/lib/simpex"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/internal/simpex"
 )
 
 // Match is the result of a pattern successfully applied to a single event
@@ -49,32 +49,28 @@ func MatchInputs(pats []string, cb Callback) Processor {
 	}
 }
 
-// MatchOutput matches the pattern against the bytes of every
-// connection.TextLine event currently in the batch.
+// MatchOutput matches the pattern against the bytes of the batch's
+// connection.TextLine trigger event, if any.
 func MatchOutput(pat string, cb Callback) Processor {
 	return MatchOutputs([]string{pat}, cb)
 }
 
-// MatchOutputs matches any of the patterns against connection.TextLine events.
+// MatchOutputs matches any of the patterns against a connection.TextLine
+// trigger event.
 func MatchOutputs(pats []string, cb Callback) Processor {
 	pbs := patternBytes(pats)
 	return func(batch app.Batch) (b app.Batch, err error) {
 		defer recoverCallback(&err)
 
-		var matches []Match
-		for i, ev := range batch.Events {
-			line, ok := ev.(connection.TextLine)
-			if !ok {
-				continue
-			}
-			if caps := firstMatch(pbs, line.Bytes); caps != nil {
-				matches = append(matches, Match{Index: i, Captures: caps})
-			}
+		line, ok := batch.Event.(connection.TextLine)
+		if !ok {
+			return batch, nil
 		}
-		if len(matches) > 0 {
-			batch = cb(matches, batch)
+		caps := firstMatch(pbs, line.Bytes)
+		if caps == nil {
+			return batch, nil
 		}
-		return batch, nil
+		return cb([]Match{{Index: 0, Captures: caps}}, batch), nil
 	}
 }
 

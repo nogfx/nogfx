@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/lib/simpex"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/internal/simpex"
 )
 
 // maxLessons is the cap on lessons that can be learnt in a single session,
@@ -81,49 +81,43 @@ func (lrn *Learning) Processor() app.Processor {
 			batch.Commands[i] = connection.Send{Bytes: lrn.nextChunk()}
 		}
 
-		// 2. If a session isn't active, leave server events alone.
+		// 2. If a session isn't active, leave the server event alone.
 		if lrn.timer == nil {
 			return batch, nil
 		}
 
-		// 3. Walk TextLine events, suppress/replace as appropriate.
-		out := batch.Events[:0]
-		for _, ev := range batch.Events {
-			line, ok := ev.(connection.TextLine)
-			if !ok {
-				out = append(out, ev)
-				continue
-			}
-
-			switch {
-			case matchesAny(lessonBeginPatterns, line.Bytes):
-				// Show the progress line on the first begin of a
-				// session so the user sees what's happening.
-				if lrn.total-lrn.remaining == maxLessons {
-					out = append(out, connection.TextLine{Bytes: lrn.progressLine()})
-				}
-				lrn.armTimer()
-
-			case simpex.Match(lessonContinuePattern, line.Bytes) != nil:
-				// Drop the noisy "continues your training" line.
-				lrn.armTimer()
-
-			case matchesAny(lessonFinishPatterns, line.Bytes):
-				if lrn.remaining <= 0 {
-					out = append(out, connection.TextLine{Bytes: lrn.completionLine()})
-					lrn.reset()
-					continue
-				}
-				batch = batch.AppendCommand(connection.Send{Bytes: lrn.nextChunk()})
-				out = append(out, connection.TextLine{Bytes: lrn.progressLine()})
-				lrn.start = time.Now()
-				lrn.armTimer()
-
-			default:
-				out = append(out, ev)
-			}
+		// 3. Match the TextLine trigger and suppress/replace as appropriate.
+		line, ok := batch.Event.(connection.TextLine)
+		if !ok {
+			return batch, nil
 		}
-		batch.Events = out
+
+		switch {
+		case matchesAny(lessonBeginPatterns, line.Bytes):
+			// Show the progress line on the first begin of a session.
+			if lrn.total-lrn.remaining == maxLessons {
+				batch.Event = connection.TextLine{Bytes: lrn.progressLine()}
+			} else {
+				batch.Event = nil
+			}
+			lrn.armTimer()
+
+		case simpex.Match(lessonContinuePattern, line.Bytes) != nil:
+			// Drop the noisy "continues your training" line.
+			batch.Event = nil
+			lrn.armTimer()
+
+		case matchesAny(lessonFinishPatterns, line.Bytes):
+			if lrn.remaining <= 0 {
+				batch.Event = connection.TextLine{Bytes: lrn.completionLine()}
+				lrn.reset()
+				return batch, nil
+			}
+			batch = batch.AppendCommand(connection.Send{Bytes: lrn.nextChunk()})
+			batch.Event = connection.TextLine{Bytes: lrn.progressLine()}
+			lrn.start = time.Now()
+			lrn.armTimer()
+		}
 		return batch, nil
 	}
 }

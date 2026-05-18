@@ -1,4 +1,4 @@
-package processors
+package generic
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/ui"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/app/ui"
 )
 
 // LogProcessor writes the textual contents of the batch (server output,
@@ -30,22 +30,20 @@ func LogProcessor(dir, filename string) (Processor, error) {
 	}
 
 	return func(batch app.Batch) (app.Batch, error) {
-		for _, ev := range batch.Events {
-			var bs []byte
-			switch e := ev.(type) {
-			case connection.TextLine:
-				bs = append(append([]byte{}, e.Bytes...), '\n')
-			case connection.Prompt:
-				bs = append(append([]byte{}, e.Bytes...), '\n')
-			case ui.Input:
-				bs = append(append([]byte("> "), e.Bytes...), '\n')
-			}
-			if len(bs) == 0 {
-				continue
-			}
-			if _, err := file.Write(bs); err != nil {
-				return batch, fmt.Errorf("failed to write to log: %w", err)
-			}
+		var bs []byte
+		switch e := batch.Event.(type) {
+		case connection.TextLine:
+			bs = append(append([]byte{}, e.Bytes...), '\n')
+		case connection.Prompt:
+			bs = append(append([]byte{}, e.Bytes...), '\n')
+		case ui.Input:
+			bs = append(append([]byte("> "), e.Bytes...), '\n')
+		}
+		if len(bs) == 0 {
+			return batch, nil
+		}
+		if _, err := file.Write(bs); err != nil {
+			return batch, fmt.Errorf("failed to write to log: %w", err)
 		}
 		return batch, nil
 	}, nil

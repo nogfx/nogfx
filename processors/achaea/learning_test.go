@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/worlds/achaea"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/processors/achaea"
 )
 
 // send is a small helper that wraps a Send command.
@@ -33,15 +33,15 @@ func sendStrings(b app.Batch) []string {
 	return out
 }
 
-// textLines extracts the bytes of every connection.TextLine event.
+// textLines returns the batch's trigger event as a TextLine string, or
+// nil if it isn't a TextLine. Tests use this to check whether the trigger
+// passed through (or was rewritten) or was suppressed (Event == nil).
 func textLines(b app.Batch) []string {
-	var out []string
-	for _, e := range b.Events {
-		if tl, ok := e.(connection.TextLine); ok {
-			out = append(out, string(tl.Bytes))
-		}
+	tl, ok := b.Event.(connection.TextLine)
+	if !ok {
+		return nil
 	}
-	return out
+	return []string{string(tl.Bytes)}
 }
 
 func TestLearning_SmallAmountUntouched(t *testing.T) {
@@ -77,18 +77,18 @@ func TestLearning_ChainsToCompletion(t *testing.T) {
 	require.Equal(t, []string{"learn 15 swordsmanship from Galen"}, sendStrings(got))
 
 	// Server confirms the first session's begin → progress line shown.
-	got, err = p(app.Batch{Events: []app.Event{line("Galen begins the lesson in Swordsmanship.")}})
+	got, err = p(app.Batch{Event: line("Galen begins the lesson in Swordsmanship.")})
 	require.NoError(t, err)
 	require.Len(t, textLines(got), 1)
 	assert.Contains(t, textLines(got)[0], "15 of 25 lessons learned")
 
 	// Continue line is suppressed.
-	got, err = p(app.Batch{Events: []app.Event{line("Galen continues your training in Swordsmanship.")}})
+	got, err = p(app.Batch{Event: line("Galen continues your training in Swordsmanship.")})
 	require.NoError(t, err)
 	assert.Empty(t, textLines(got), "continue lines should be suppressed")
 
 	// Finish line triggers next chunk + a progress update.
-	got, err = p(app.Batch{Events: []app.Event{line("Galen finishes the lesson in Swordsmanship.")}})
+	got, err = p(app.Batch{Event: line("Galen finishes the lesson in Swordsmanship.")})
 	require.NoError(t, err)
 	require.Equal(t, []string{"learn 10 swordsmanship from Galen"}, sendStrings(got),
 		"finish should queue the next chunk")
@@ -97,19 +97,19 @@ func TestLearning_ChainsToCompletion(t *testing.T) {
 
 	// The second session's begin should NOT show another progress line
 	// (only the first begin of the whole sequence does).
-	got, err = p(app.Batch{Events: []app.Event{line("Galen begins the lesson in Swordsmanship.")}})
+	got, err = p(app.Batch{Event: line("Galen begins the lesson in Swordsmanship.")})
 	require.NoError(t, err)
 	assert.Empty(t, textLines(got), "subsequent begin lines stay suppressed")
 
 	// The final finish completes the sequence: show "25 of 25" and stop.
-	got, err = p(app.Batch{Events: []app.Event{line("Galen finishes the lesson in Swordsmanship.")}})
+	got, err = p(app.Batch{Event: line("Galen finishes the lesson in Swordsmanship.")})
 	require.NoError(t, err)
 	assert.Empty(t, sendStrings(got), "no more chunks after completion")
 	require.Len(t, textLines(got), 1)
 	assert.True(t, strings.HasPrefix(textLines(got)[0], "25 of 25 lessons learned"))
 
 	// State has been reset; further finish lines pass through unchanged.
-	got, err = p(app.Batch{Events: []app.Event{line("Galen finishes the lesson in Swordsmanship.")}})
+	got, err = p(app.Batch{Event: line("Galen finishes the lesson in Swordsmanship.")})
 	require.NoError(t, err)
 	assert.Empty(t, sendStrings(got))
 	require.Len(t, textLines(got), 1)
@@ -126,7 +126,7 @@ func TestLearning_AlternativeFinishPatterns(t *testing.T) {
 
 	// The "bows to you - the lesson in X is over" variant should also
 	// drive the chain.
-	got, err := p(app.Batch{Events: []app.Event{line("Belluno bows to you - the lesson in Inscription is over.")}})
+	got, err := p(app.Batch{Event: line("Belluno bows to you - the lesson in Inscription is over.")})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"learn 5 inscription from Belluno"}, sendStrings(got))
 }

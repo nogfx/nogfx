@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/worlds/achaea"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/processors/achaea"
 )
 
 func TestBashing_KillExpandsToQueue(t *testing.T) {
@@ -35,7 +35,7 @@ func TestBashing_AttackLineQueuesContinuation(t *testing.T) {
 	// Server reports our side kick connecting → continue attacking on
 	// the next equilibrium.
 	got, err := p(app.Batch{
-		Events: []app.Event{line("You pump out at the orc with a powerful side kick.")},
+		Event: line("You pump out at the orc with a powerful side kick."),
 	})
 	require.NoError(t, err)
 	require.Equal(t,
@@ -56,7 +56,7 @@ func TestBashing_SlainStopsAttackingIfNoCandidates(t *testing.T) {
 	// One of the previous attacks is still queued, then the target dies.
 	got, err := p(app.Batch{
 		Commands: []app.Command{send("queue addclear eqbal combo sdk ucp ucp")},
-		Events:   []app.Event{line("You have slain the orc, retrieving the corpse.")},
+		Event:    line("You have slain the orc, retrieving the corpse."),
 	})
 	require.NoError(t, err)
 
@@ -76,12 +76,12 @@ func TestBashing_GoldTriggersLooting(t *testing.T) {
 	_, err := p(app.Batch{Commands: []app.Command{send("kill")}})
 	require.NoError(t, err)
 
-	got, err := p(app.Batch{
-		Events: []app.Event{
-			line("You have slain the orc, retrieving the corpse."),
-			line("A small pile of sovereigns spills from the corpse."),
-		},
-	})
+	got, err := p(app.Batch{Event: line("You have slain the orc, retrieving the corpse.")})
+	require.NoError(t, err)
+	assert.NotContains(t, sendStrings(got), "get sovereigns",
+		"the slain event alone shouldn't trigger looting")
+
+	got, err = p(app.Batch{Event: line("A small pile of sovereigns spills from the corpse.")})
 	require.NoError(t, err)
 
 	cmds := sendStrings(got)
@@ -94,7 +94,7 @@ func TestBashing_NoKillNoBashing(t *testing.T) {
 	p := bsh.Processor()
 
 	got, err := p(app.Batch{
-		Events: []app.Event{line("You pump out at the orc with a powerful side kick.")},
+		Event: line("You pump out at the orc with a powerful side kick."),
 	})
 	require.NoError(t, err)
 	assert.Empty(t, sendStrings(got),

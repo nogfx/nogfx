@@ -1,107 +1,67 @@
 package achaea
 
 import (
-	"strings"
-
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/lib/simpex"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/internal/simpex"
 )
 
-// TunnelVision filters and rewrites server output to make large quantities
-// of combat text easier and faster to read.
+// TunnelVision filters server output to make large quantities of combat
+// text easier and faster to read.
 //
-// It does two things to each paragraph of output:
+// It omits common spam (balance-recovery confirmations, queue commands,
+// weather, defence acquisitions) and suppresses paired curing lines (the
+// action message followed by the effect message) — the curing line is
+// dropped first; if the matching cured line follows in the next batch, it
+// is dropped too.
 //
-//   - Omit common spam — balance-recovery confirmations, queue commands,
-//     weather, defence acquisitions — that the user does not need to see.
-//   - Consolidate a flurry of attack-related lines (the strike, the
-//     critical, the dodge/miss/reflect) into a single coloured summary.
-//
-// The classifier is pattern-driven and lives in tvPatterns / tvOmits /
-// tvModifiers. Lines that match none of those patterns pass through
-// unchanged.
+// @todo Reintroduce attack-line consolidation. The previous implementation
+// consolidated a flurry of attack lines into a single summary, which is no
+// longer possible without explicit cross-batch buffering. A redesign needs
+// either a flush trigger (next non-attack TextLine) or a derived-event
+// pattern that emits the summary at the right point in the chain.
 type TunnelVision struct {
 	character *Character
+
+	// expectCured is set when the previous TextLine was a tvCuring; the
+	// next batch checks whether its event is the matching tvCured and, if
+	// so, drops it too.
+	expectCured bool
 }
 
-// rewriteProcessor is the post-classification rewrite pass. It walks the
-// batch's TextLine events in order, drops the ones that should be omitted,
-// and consolidates consecutive attack lines into a single summary line.
-func (tv TunnelVision) rewriteProcessor() app.Processor {
+// rewriteProcessor is the per-event filter pass. On a TextLine trigger it
+// classifies the line and drops omits and paired curing/cured pairs by
+// setting batch.Event to nil. Other text passes through unchanged.
+func (tv *TunnelVision) rewriteProcessor() app.Processor {
 	return func(batch app.Batch) (app.Batch, error) {
-		var (
-			out      []app.Event
-			attacks  []string
-			attackOn string
-			i        int
-		)
-
-		flush := func() {
-			if len(attacks) == 0 {
-				return
-			}
-			text := "You \x1b[32;1mattack\x1b[0m"
-			if attackOn != "" {
-				text += " " + attackOn
-			}
-			text += " " + strings.Join(attacks, " ")
-			out = append(out, connection.TextLine{Bytes: []byte(text + ".")})
-			attacks = nil
-			attackOn = ""
+		line, ok := batch.Event.(connection.TextLine)
+		if !ok {
+			tv.expectCured = false
+			return batch, nil
 		}
 
-		// Pre-pass: build a parallel slice marking each TextLine event with
-		// classification info. Non-TextLine events keep their slot empty.
-		classes := make([]tvClass, len(batch.Events))
-		for i, ev := range batch.Events {
-			line, ok := ev.(connection.TextLine)
-			if !ok {
-				continue
-			}
-			classes[i] = classifyTunnelVision(line.Bytes, tv.character)
-		}
+		c := classifyTunnelVision(line.Bytes, tv.character)
 
-		// Paired curing suppression: drop a "you took a cure" line when it
-		// is immediately followed by the matching "you feel cured" line, or
-		// vice versa.
-		for i := 0; i < len(classes); i++ {
-			if classes[i].kind == tvCuring && i+1 < len(classes) && classes[i+1].kind == tvCured {
-				classes[i].kind = tvOmit
-				classes[i+1].kind = tvOmit
-				i++
+		if tv.expectCured {
+			tv.expectCured = false
+			if c.kind == tvCured {
+				batch.Event = nil
+				return batch, nil
 			}
 		}
 
-		for i = range batch.Events {
-			ev := batch.Events[i]
-			c := classes[i]
-
-			switch c.kind {
-			case tvOmit:
-				continue
-
-			case tvAttack:
-				if attackOn == "" {
-					attackOn = "\x1b[32;1m" + c.detail + "\x1b[0m"
-				}
-				attacks = append(attacks, "/ \x1b[32;1m"+c.style+"\x1b[0m")
-
-			case tvAttackModifier:
-				attacks = append(attacks, c.detail)
-
-			case tvNone, tvCuring, tvCured:
-				// Curing/cured events are paired-suppressed earlier;
-				// anything that's still tvCuring/tvCured here is an
-				// unpaired straggler that passes through. tvNone is
-				// the default "no classification, pass through" case.
-				flush()
-				out = append(out, ev)
-			}
+		switch c.kind {
+		case tvOmit:
+			batch.Event = nil
+		case tvCuring:
+			// Optimistically drop the curing line; if the next batch is
+			// the matching cured, that's also dropped.
+			tv.expectCured = true
+			batch.Event = nil
+		case tvNone, tvAttack, tvAttackModifier, tvCured:
+			// Pass through unchanged. Stray cured lines (without a
+			// preceding curing) also pass through.
 		}
-		flush()
-
-		batch.Events = out
 		return batch, nil
 	}
 }

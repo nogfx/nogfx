@@ -1,4 +1,4 @@
-package processors_test
+package generic_test
 
 import (
 	"testing"
@@ -7,22 +7,20 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/app/ui"
 	"github.com/nogfx/nogfx/platform/gmcp"
-	"github.com/nogfx/nogfx/processors"
-	"github.com/nogfx/nogfx/ui"
+	"github.com/nogfx/nogfx/processors/generic"
 )
 
 func TestRender_CharName(t *testing.T) {
 	batch := app.Batch{
-		Events: []app.Event{
-			processors.DecodedGMCP{Message: &gmcp.CharName{
-				Name:     "asdf",
-				Fullname: "AsDf the Mighty",
-			}},
-		},
+		Event: generic.DecodedGMCP{Message: &gmcp.CharName{
+			Name:     "asdf",
+			Fullname: "AsDf the Mighty",
+		}},
 	}
 
-	got, err := processors.Render()(batch)
+	got, err := generic.Render()(batch)
 	require.NoError(t, err)
 	require.Len(t, got.Commands, 1)
 
@@ -34,15 +32,13 @@ func TestRender_CharName(t *testing.T) {
 
 func TestRender_RoomInfo(t *testing.T) {
 	batch := app.Batch{
-		Events: []app.Event{
-			processors.DecodedGMCP{Message: &gmcp.RoomInfo{
-				Number: 42,
-				Name:   "A Glade",
-			}},
-		},
+		Event: generic.DecodedGMCP{Message: &gmcp.RoomInfo{
+			Number: 42,
+			Name:   "A Glade",
+		}},
 	}
 
-	got, err := processors.Render()(batch)
+	got, err := generic.Render()(batch)
 	require.NoError(t, err)
 	require.Len(t, got.Commands, 1)
 
@@ -55,12 +51,10 @@ func TestRender_RoomInfo(t *testing.T) {
 
 func TestRender_IgnoresUnknownMessages(t *testing.T) {
 	batch := app.Batch{
-		Events: []app.Event{
-			processors.DecodedGMCP{Message: &gmcp.CharLogin{Name: "x"}},
-		},
+		Event: generic.DecodedGMCP{Message: &gmcp.CharLogin{Name: "x"}},
 	}
 
-	got, err := processors.Render()(batch)
+	got, err := generic.Render()(batch)
 	require.NoError(t, err)
 	assert.Empty(t, got.Commands)
 }

@@ -1,11 +1,9 @@
 package achaea
 
 import (
-	"math"
-
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/lib/simpex"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/internal/simpex"
 )
 
 var (
@@ -37,9 +35,9 @@ var (
 type Bashing struct {
 	world *world
 
-	active    bool
-	attacking bool
-	killed    int
+	active        bool
+	attacking     bool
+	recentlySlain bool
 }
 
 // NewBashing constructs a Bashing processor bound to the world's target
@@ -68,39 +66,31 @@ func (bsh *Bashing) Processor() app.Processor {
 			bsh.active = true
 		}
 
-		// 2. Walk TextLine events to drive the state machine.
-		bsh.killed = math.MinInt
-		for i, ev := range batch.Events {
-			line, ok := ev.(connection.TextLine)
-			if !ok {
-				continue
-			}
-
-			switch {
-			case simpex.Match(bashSlainPattern, line.Bytes) != nil:
-				batch = bsh.onSlain(batch, i)
-
-			case matchesAny(bashAttackedPatterns, line.Bytes):
-				batch = bsh.onAttack(batch, i)
-
-			case simpex.Match(bashGoldPattern, line.Bytes) != nil:
-				batch = bsh.onGold(batch)
-			}
+		// 2. Drive the state machine on a TextLine trigger.
+		line, ok := batch.Event.(connection.TextLine)
+		if !ok {
+			return batch, nil
 		}
 
-		bsh.attacking = false
-		bsh.killed = 0
+		switch {
+		case simpex.Match(bashSlainPattern, line.Bytes) != nil:
+			batch = bsh.onSlain(batch)
+
+		case matchesAny(bashAttackedPatterns, line.Bytes):
+			batch = bsh.onAttack(batch)
+
+		case simpex.Match(bashGoldPattern, line.Bytes) != nil:
+			batch = bsh.onGold(batch)
+		}
 		return batch, nil
 	}
 }
 
-func (bsh *Bashing) onSlain(batch app.Batch, atIndex int) app.Batch {
+func (bsh *Bashing) onSlain(batch app.Batch) app.Batch {
 	if !bsh.active {
 		return batch
 	}
-	if atIndex > bsh.killed {
-		bsh.killed = atIndex
-	}
+	bsh.recentlySlain = true
 	if bsh.world != nil && bsh.world.Target != nil && bsh.world.Target.Queue() > 0 {
 		return batch
 	}
@@ -113,15 +103,14 @@ func (bsh *Bashing) onSlain(batch app.Batch, atIndex int) app.Batch {
 	return batch
 }
 
-func (bsh *Bashing) onAttack(batch app.Batch, atIndex int) app.Batch {
-	// If a kill happened earlier in the same paragraph but a new attack
-	// follows (the next target stepped up), keep attacking.
-	if bsh.killed != math.MinInt && bsh.killed > 0 && !bsh.active {
-		if atIndex > bsh.killed {
-			bsh.active = true
-			batch = dropMatching(batch, bashClearEqbal)
-		}
+func (bsh *Bashing) onAttack(batch app.Batch) app.Batch {
+	// If a kill happened recently but a new attack follows (the next
+	// target stepped up), keep attacking.
+	if bsh.recentlySlain && !bsh.active {
+		bsh.active = true
+		batch = dropMatching(batch, bashClearEqbal)
 	}
+	bsh.recentlySlain = false
 
 	if !bsh.active {
 		return batch
@@ -137,7 +126,7 @@ func (bsh *Bashing) onAttack(batch app.Batch, atIndex int) app.Batch {
 }
 
 func (bsh *Bashing) onGold(batch app.Batch) app.Batch {
-	if bsh.killed == math.MinInt {
+	if !bsh.recentlySlain {
 		return batch
 	}
 	batch = batch.AppendCommand(connection.Send{Bytes: []byte("get sovereigns")})

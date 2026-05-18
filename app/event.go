@@ -15,3 +15,18 @@ type Event interface {
 type EventMarker struct{}
 
 func (EventMarker) isEvent() {}
+
+// GuardedEvent is an opt-in interface for events that forbid certain
+// commands from appearing in their batch. The engine checks `batch.Event`
+// for this interface after the processor chain runs and drops (with a log
+// line) any command the event forbids. The intent is to break re-entrant
+// loops at the contract level — e.g. a ReFormatting event forbids a
+// further ReFormat command, since emitting one would replay the same
+// scrollback and re-enter the same code path.
+//
+// Most events implement nothing extra. GuardedEvent is the exception, not
+// the norm.
+type GuardedEvent interface {
+	Event
+	Forbids(Command) bool
+}
