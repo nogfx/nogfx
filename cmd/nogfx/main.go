@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/platform/headless"
 	"github.com/nogfx/nogfx/platform/telnet"
 	"github.com/nogfx/nogfx/platform/tui"
 	"github.com/nogfx/nogfx/processors/achaea"
@@ -32,8 +34,21 @@ func main() {
 // realMain is the real entry point. It exists so that deferred cleanups
 // (e.g. closing the error log) actually run; log.Fatal would skip defers.
 func realMain() error {
-	if len(os.Args) < 2 {
-		return errors.New("usage: nogfx example.com:23")
+	flags := flag.NewFlagSet("nogfx", flag.ContinueOnError)
+	headlessMode := flags.Bool("headless", false,
+		"run without the TUI; read commands from stdin and write game output to stdout")
+	flags.Usage = func() {
+		if _, err := fmt.Fprintln(flags.Output(), "usage: nogfx [--headless] example.com:23"); err != nil {
+			log.Printf("usage: %v", err)
+		}
+		flags.PrintDefaults()
+	}
+	if err := flags.Parse(os.Args[1:]); err != nil {
+		return err
+	}
+	args := flags.Args()
+	if len(args) < 1 {
+		return errors.New("usage: nogfx [--headless] example.com:23")
 	}
 
 	f, err := os.OpenFile(
@@ -50,12 +65,12 @@ func realMain() error {
 	}()
 	log.SetOutput(f)
 
-	address, err := parseAddress(os.Args[1])
+	address, err := parseAddress(args[0])
 	if err != nil {
 		return err
 	}
 
-	return run(address)
+	return run(address, *headlessMode)
 }
 
 // parseAddress normalises a user-supplied server address into "host:port"
@@ -87,7 +102,7 @@ func parseAddress(address string) (string, error) {
 	return net.JoinHostPort(host, port), nil
 }
 
-func run(address string) error {
+func run(address string, headlessMode bool) error {
 	ctx := context.Background()
 
 	conn, err := telnet.Dial(ctx, address)
@@ -95,12 +110,17 @@ func run(address string) error {
 		return err
 	}
 
-	terminal, err := newTUI()
-	if err != nil {
-		return err
+	var terminal app.Endpoint
+	if headlessMode {
+		terminal = headless.New()
+	} else {
+		terminal, err = newTUI()
+		if err != nil {
+			return err
+		}
 	}
 
-	chain, err := buildChain(address)
+	chain, err := buildChain(address, headlessMode)
 	if err != nil {
 		return err
 	}
@@ -121,7 +141,7 @@ func run(address string) error {
 //
 // The world is unaware of logging, generic input/output translation, and
 // user scripts; the composition root owns that wiring.
-func buildChain(address string) (app.Processor, error) {
+func buildChain(address string, headlessMode bool) (app.Processor, error) {
 	logDir := filepath.Join(directory, "logs")
 	now := time.Now().Format("20060102-150405")
 	host := strings.Split(address, ":")[0]
@@ -147,16 +167,56 @@ func buildChain(address string) (app.Processor, error) {
 
 	preWorld := []app.Processor{
 		rawLog,
+		// Telnet option negotiation. Runs early so its replies (IAC DO,
+		// IAC WILL, etc.) land in the same batch as the trigger
+		// TelnetCommand and are dispatched ahead of any world or
+		// auto-login reactions that depend on the option being agreed
+		// (e.g. GMCP must be agreed before Core.Supports.Set / Char.Login
+		// are sent).
+		generic.TelnetNegotiation(generic.DefaultNegotiation()),
+		// Message aggregator. Buffers TextLine and GMCPFrame events;
+		// emits a derived connection.Message on each Prompt. Additive —
+		// per-event consumers (output renderer, raw log, GMCP state
+		// updaters) keep seeing the underlying events unchanged. See
+		// docs/design/messages.md.
+		generic.Aggregator(),
 		generic.Input(),
 		generic.SplitInputProcessor(sep),
 		generic.RepeatInputProcessor(),
 	}
 
+	// The event log is a per-event probe used for protocol/feature
+	// investigation. It is on by default in headless mode (the assistant's
+	// canonical observation surface; see docs/agent/conduct.md) and
+	// opt-in elsewhere via NOGFX_DEBUG_EVENTS. The probe sits at the very
+	// head of the chain so it sees every event before any transformation.
+	if headlessMode || os.Getenv("NOGFX_DEBUG_EVENTS") != "" {
+		eventLog, err := generic.EventLogProcessor(
+			logDir,
+			fmt.Sprintf("%s-%s.events.log", host, now),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create event log processor: %w", err)
+		}
+		preWorld = append([]app.Processor{eventLog}, preWorld...)
+	}
+
+	creds, err := loadCredentials(directory, host)
+	if err != nil {
+		return nil, fmt.Errorf("load credentials: %w", err)
+	}
+
 	var worldProcs []app.Processor
 	switch address {
 	case "achaea.com:23", "50.31.100.8:23":
-		worldProcs = achaea.New().Processors()
+		worldProcs = append(worldProcs, achaea.New().Processors()...)
 	}
+	// Auto-login is GMCP-based (Char.Login) and therefore world-agnostic
+	// for the Mudlet/Iron Realms family. It sits after world processors so
+	// the world's own GMCP-support announcement (Core.Supports.Set) is
+	// queued first; with both in the same batch, the engine applies them
+	// in order.
+	worldProcs = append(worldProcs, generic.AutoLogin(creds))
 
 	// User scripts go here once a loader exists. They sit between the
 	// world and the generic Output/log so that they see decoded events
