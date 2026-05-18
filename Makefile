@@ -1,12 +1,18 @@
-.PHONY: all build test mocks
+.PHONY: all run build test lint mocks
 
-all: build test
+ADDRESS ?= achaea.com:23
 
-build:
-	go build ./...
+run: test lint
+	@echo "Running nogfx on $(ADDRESS)"
+	@go run ./cmd/nogfx $(ADDRESS)
 
 test:
-	go test ./...
+	@echo "Running tests..."
+	@go test ./...
+
+lint:
+	@echo "Running linters..."
+	@golangci-lint run
 
 # mocks regenerates the tcell.Screen mock used by platform/tui tests. The
 # mock lives as a _test.go file in the tui package so it ships only at test
