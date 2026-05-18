@@ -14,3 +14,7 @@ Make sure to continuously capture durable insights and decisions in these files 
   - `go build -o /dev/null ./...` verifies compilation.
   - `go test ./...` verifies functionality.
   - `golangci-lint run` verifies code quality.
+
+## Live sessions
+
+When running `nogfx --headless` against a real server (for protocol/feature investigation), read `docs/agent/conduct.md` first. It defines the test character, allowed and forbidden commands, panic-state recognition, and credential handling. It is the contract for live-session work; it is not optional.
