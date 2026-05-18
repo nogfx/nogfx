@@ -2,7 +2,9 @@ package telnet
 
 import (
 	"bytes"
-	"fmt"
+
+	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/app/connection"
 )
 
 // SplitFunc looks for string termination based on negotiated options. By
@@ -78,23 +80,48 @@ func (nvt *NVT) Read(buffer []byte) (count int, err error) {
 			return count, nil
 		}
 
-		err = nvt.negotiate(nvt.cmdBuffer)
-		if err != nil {
-			return count, fmt.Errorf("failed negotiation: %w", err)
-		}
-
-		if nvt.CommandFunc != nil {
-			err := nvt.CommandFunc(nvt.cmdBuffer, nvt)
-			if err != nil {
-				fmt.Println(">", err)
-				return count, fmt.Errorf("failed command processing: %w", err)
-			}
-		}
-
+		nvt.surface(nvt.cmdBuffer)
 		nvt.cmdBuffer = []byte{}
 	}
 
 	return count, nil
+}
+
+// surface decodes a complete IAC sequence into a typed event and pushes
+// it onto the engine's events channel (or buffers it for later if Run
+// hasn't been called yet). WILL/WONT/DO/DONT options arrive as
+// TelnetCommand; IAC SB GMCP <payload> IAC SE arrives as GMCPFrame
+// (payload only, no envelope bytes). Other subnegotiation packets
+// surface as TelnetCommand for any processor that wants to interpret
+// them.
+//
+// State inference is intentionally not done here — Write owns the
+// outgoing side and that's what SplitFunc reads. Incoming WILL/DO
+// doesn't flip our state until a processor decides to acknowledge it
+// (the Send command flowing back through Apply updates the state).
+//
+// @todo Handle doubled-IAC escaping inside SB payloads (RFC 855).
+// Achaea's GMCP JSON never contains raw 0xFF bytes, so this is
+// theoretical for now; surface a real-world misframing before adding the
+// unescape pass.
+func (nvt *NVT) surface(cmd []byte) {
+	ev := decodeIAC(cmd)
+	if nvt.events != nil {
+		nvt.events <- ev
+		return
+	}
+	nvt.pendingEvents = append(nvt.pendingEvents, ev)
+}
+
+func decodeIAC(cmd []byte) app.Event {
+	cp := append([]byte{}, cmd...)
+
+	if len(cp) >= 5 && cp[0] == IAC && cp[1] == SB && cp[2] == GMCP &&
+		cp[len(cp)-2] == IAC && cp[len(cp)-1] == SE {
+		payload := append([]byte{}, cp[3:len(cp)-2]...)
+		return connection.GMCPFrame{Payload: payload}
+	}
+	return connection.TelnetCommand{Bytes: cp}
 }
 
 // Write sends data to the server.
@@ -123,8 +150,12 @@ func (nvt *NVT) Write(data []byte) (int, error) {
 		switch data[i+1] {
 		case Do:
 			nvt.options[theirside][data[i+2]] = StateEnabling
+		case Dont:
+			nvt.options[theirside][data[i+2]] = StateDisabled
 		case Will:
 			nvt.options[ourside][data[i+2]] = StateEnabling
+		case Wont:
+			nvt.options[ourside][data[i+2]] = StateDisabled
 		}
 
 		if bytes.IndexByte([]byte{Do, Dont, Will, Wont}, data[i+1]) >= 0 {

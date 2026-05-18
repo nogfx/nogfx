@@ -15,6 +15,19 @@ import (
 // connection events, and pushes them onto events until ctx is cancelled or
 // the transport closes. Run satisfies connection.Connection.
 func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
+	// Wire the channel so Read.surface() can push IAC events directly.
+	// Direct push avoids the deadlock that would occur if events queued
+	// behind a Scan that's blocked waiting for text after a pure-IAC
+	// burst.
+	nvt.events = events
+	defer func() { nvt.events = nil }()
+
+	// Drain anything Read queued before Run started.
+	for _, ev := range nvt.pendingEvents {
+		events <- ev
+	}
+	nvt.pendingEvents = nil
+
 	scanner := bufio.NewScanner(nvt)
 	scanner.Split(nvt.SplitFunc)
 
@@ -26,15 +39,6 @@ func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
 
 		tok := append([]byte{}, scanner.Bytes()...)
 		tok = bytes.TrimRight(tok, "\r\n")
-
-		// IAC sequences surface as TelnetCommand events. Negotiation
-		// happens inside the NVT (see negotiation.go) but other IAC
-		// command bytes (WILL GMCP and similar that the application
-		// needs to react to) flow through the pipeline.
-		if len(tok) > 0 && tok[0] == IAC {
-			events <- connection.TelnetCommand{Bytes: tok}
-			continue
-		}
 
 		// Lines without a trailing GA are accumulated; a paragraph
 		// ends when a token terminates with GA. The final line of the

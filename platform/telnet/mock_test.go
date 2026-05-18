@@ -8,14 +8,6 @@ import (
 	"time"
 )
 
-type MockError struct{}
-
-func (MockError) Error() string {
-	return "mock error"
-}
-
-var errMock error = MockError{}
-
 type mockAddr struct{}
 
 func (mockAddr) Network() string { return "mock" }

@@ -16,10 +16,22 @@ import (
 // Verify interface fulfilments.
 var _ bufio.SplitFunc = (&telnet.NVT{}).SplitFunc
 
+// enableSuppressGoAhead arranges the state a TelnetNegotiation processor
+// would have reached after exchanging IAC WILL/DO SuppressGoAhead. SplitFunc
+// consults this state to decide whether CRLF terminates a prompt. Without
+// an in-process negotiation, tests that depend on SGA being enabled have
+// to arrange it explicitly.
+func enableSuppressGoAhead(t *testing.T, c *telnet.NVT) {
+	t.Helper()
+	_, err := c.Write([]byte{telnet.IAC, telnet.Do, telnet.SuppressGoAhead})
+	require.NoError(t, err)
+}
+
 func TestSplitFunc(t *testing.T) {
 	tcs := map[string]struct {
 		output     []byte
 		conn       net.Conn
+		enableSGA  bool
 		iterations int
 		scanned    [][]byte
 	}{
@@ -40,6 +52,7 @@ func TestSplitFunc(t *testing.T) {
 				telnet.IAC, telnet.Will, telnet.SuppressGoAhead,
 				'x', '\r', '\n', 'y', '\r', '\n',
 			},
+			enableSGA: true,
 			scanned: [][]byte{
 				[]byte("x\r\n"),
 			},
@@ -50,6 +63,7 @@ func TestSplitFunc(t *testing.T) {
 				telnet.IAC, telnet.Will, telnet.SuppressGoAhead,
 				'x', '\r', 'y', '\r',
 			},
+			enableSGA: true,
 			scanned: [][]byte{
 				[]byte("x\ry\r"),
 			},
@@ -60,6 +74,7 @@ func TestSplitFunc(t *testing.T) {
 				telnet.IAC, telnet.Will, telnet.SuppressGoAhead,
 				'x', '\n', 'y', '\n',
 			},
+			enableSGA: true,
 			scanned: [][]byte{
 				[]byte("x\ny\n"),
 			},
@@ -94,6 +109,7 @@ func TestSplitFunc(t *testing.T) {
 				'x', telnet.IAC, telnet.GA,
 				'y', telnet.IAC, telnet.GA,
 			},
+			enableSGA: true,
 			scanned: [][]byte{
 				{'x', telnet.GA},
 			},
@@ -117,6 +133,10 @@ func TestSplitFunc(t *testing.T) {
 			}
 			client := telnet.NewNVT(conn)
 
+			if tc.enableSGA {
+				enableSuppressGoAhead(t, client)
+			}
+
 			scanner := bufio.NewScanner(client)
 			scanner.Split(client.SplitFunc)
 
@@ -139,6 +159,7 @@ func TestSplitFunc(t *testing.T) {
 func TestRead(t *testing.T) {
 	tcs := map[string]struct {
 		serverWrite  []byte
+		enableSGA    bool
 		iterations   int
 		bufferLength int
 		serverRead   []byte
@@ -175,6 +196,7 @@ func TestRead(t *testing.T) {
 				telnet.IAC, telnet.Will, telnet.SuppressGoAhead,
 				'h', 'e', '\r', '\n', 'l', 'l', 'o',
 			},
+			enableSGA:  true,
 			serverRead: []byte("he\r\n"),
 		},
 
@@ -183,6 +205,7 @@ func TestRead(t *testing.T) {
 				telnet.IAC, telnet.Will, telnet.SuppressGoAhead,
 				'h', 'e', '\r', '\n', 'l', 'l', 'o',
 			},
+			enableSGA:  true,
 			iterations: 2,
 			serverRead: []byte("he\r\nllo"),
 		},
@@ -228,6 +251,10 @@ func TestRead(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			client := telnet.NewNVT(NewMockConn(tc.serverWrite))
 
+			if tc.enableSGA {
+				enableSuppressGoAhead(t, client)
+			}
+
 			bufferLength := len(tc.serverWrite)
 			if buffer := tc.bufferLength; buffer > 0 {
 				bufferLength = buffer
@@ -251,23 +278,10 @@ func TestRead(t *testing.T) {
 	}
 }
 
-func TestCommandFunc(t *testing.T) {
-	client := telnet.NewNVT(NewMockConn([]byte{'x', telnet.IAC, telnet.Do, 'a', 'y'}))
-
-	scanner := bufio.NewScanner(client)
-	scanner.Split(client.SplitFunc)
-
-	var commanded []byte
-	client.CommandFunc = func(cmd []byte, _ net.Conn) error {
-		commanded = cmd
-		return errMock
-	}
-
-	scanner.Scan()
-
-	assert.Equal(t, []byte{telnet.IAC, telnet.Do, 'a'}, commanded)
-	assert.ErrorIs(t, scanner.Err(), errMock)
-}
+// Note: a previous TestCommandFunc was removed when negotiation/command
+// dispatch moved out of the NVT — IAC sequences now surface to the engine
+// as TelnetCommand / GMCPFrame events (see TestRunSurfacesIACEvents in
+// run_test.go) and policy belongs to processors.
 
 func TestWrite(t *testing.T) {
 	tcs := map[string]struct {
