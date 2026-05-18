@@ -96,8 +96,8 @@ func (world *world) cmdprocess(batch app.Batch) (app.Batch, error) {
 	switch ev := batch.Event.(type) {
 	case connection.TelnetCommand:
 		if bytes.Equal(ev.Bytes, connection.IACWillGMCP) {
-			batch = batch.AppendCommand(connection.Send{
-				Bytes: []byte((&gmcp.CoreSupportsSet{
+			batch = batch.AppendCommand(connection.SendGMCP{
+				Payload: []byte((&gmcp.CoreSupportsSet{
 					"Char":         1,
 					"Char.Items":   1,
 					"Char.Skills":  1,
@@ -144,7 +144,7 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 			[]byte((&gmcp.CommChannelPlayers{}).Marshal()),
 			[]byte((&igmcp.IRERiftRequest{}).Marshal()),
 		} {
-			batch = batch.AppendCommand(connection.Send{Bytes: m})
+			batch = batch.AppendCommand(connection.SendGMCP{Payload: m})
 		}
 		batch = batch.AppendCommand(ui.SetCharacter{
 			Name:  world.Character.Name,

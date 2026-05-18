@@ -80,6 +80,14 @@ func (nvt *NVT) Apply(cmd app.Command) error {
 		_, err := nvt.Write(c.Bytes)
 		return err
 
+	case connection.SendGMCP:
+		frame := make([]byte, 0, len(c.Payload)+5)
+		frame = append(frame, IAC, SB, GMCP)
+		frame = append(frame, c.Payload...)
+		frame = append(frame, IAC, SE)
+		_, err := nvt.Write(frame)
+		return err
+
 	case connection.Reconnect, connection.Disconnect:
 		// Not yet implemented. Returning nil avoids the engine treating
 		// these as routing failures; the actual transport-control wiring
