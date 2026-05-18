@@ -3,18 +3,15 @@ package achaea
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"log"
-	"time"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/app/ui"
+	"github.com/nogfx/nogfx/internal/navigation"
 	"github.com/nogfx/nogfx/platform/gmcp"
 	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
 	igmcp "github.com/nogfx/nogfx/platform/gmcp/ironrealms"
-	"github.com/nogfx/nogfx/processors"
-	"github.com/nogfx/nogfx/ui"
 )
 
 type world struct {
@@ -23,67 +20,69 @@ type world struct {
 	Target    *Target
 }
 
-// World holds the Achaea-specific state and exposes Pre/Post slices of
-// processors. User scripts are inserted between Pre and Post by the engine
-// wiring (currently `app.Chain(append(append(w.Pre(), scripts...),
-// w.Post()...)...)`); when no scripts are loaded the Pre+Post chain is
-// equivalent to the previous single Processor.
+// World holds the Achaea-specific state and exposes a Processors slice the
+// composition root (cmd/nogfx/main.go) splices into the engine chain. The
+// world is unaware of logging, user scripts, and any other infrastructure
+// around it — only its own state and feature generic.
 type World struct {
 	state *world
 	tv    TunnelVision
-
-	rawLog app.Processor
-	out    app.Processor
 }
 
-// New constructs an Achaea World, opening per-session raw and processed log
-// files inside logDir. New takes no UI or Connection references —
-// everything the world does flows through the batch's events and commands.
-func New(logDir string) (*World, error) {
+// New constructs an Achaea World. New takes no UI, Connection, or logging
+// references — everything the world does flows through the batch's events
+// and commands.
+func New() *World {
 	state := &world{
 		Character: &Character{},
 		Target:    NewTarget(),
 	}
 
-	now := time.Now().Format("20060102-150405")
-
-	rawLog, err := processors.LogProcessor(
-		logDir,
-		fmt.Sprintf("achaea.com-%s.raw.log", now),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create log processor: %w", err)
-	}
-
-	out, err := processors.LogProcessor(
-		logDir,
-		fmt.Sprintf("achaea.com-%s.log", now),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create log processor: %w", err)
-	}
-
 	return &World{
-		state:  state,
-		tv:     TunnelVision{character: state.Character},
-		rawLog: rawLog,
-		out:    out,
-	}, nil
+		state: state,
+		tv:    TunnelVision{character: state.Character},
+	}
 }
 
-// Pre returns the processors that run before user scripts. These do raw
-// logging, input translation, output rewriting, game state mutation, and
-// feature processors that should see clean events.
-func (w *World) Pre() []app.Processor {
-	// @todo Read the CommandSeparator configuration and use that instead.
-	sep := []byte{';'}
+// newRewriteOutput returns a stateful processor that drops blank TextLine
+// events (the server sends them to compensate for echoed player input) and
+// carries any leading ANSI escape bytes forward onto the next TextLine, so
+// colour state is preserved.
+func newRewriteOutput() app.Processor {
+	var pendingANSI []byte
+	return func(batch app.Batch) (app.Batch, error) {
+		line, ok := batch.Event.(connection.TextLine)
+		if !ok {
+			return batch, nil
+		}
+		if len(stripANSI(line.Bytes)) == 0 {
+			if len(line.Bytes) > 0 {
+				pendingANSI = append(pendingANSI[:0], line.Bytes...)
+			}
+			batch.Event = nil
+			return batch, nil
+		}
+		if len(pendingANSI) > 0 {
+			batch.Event = connection.TextLine{
+				Bytes: append(append([]byte{}, pendingANSI...), line.Bytes...),
+			}
+			pendingANSI = pendingANSI[:0]
+		}
+		return batch, nil
+	}
+}
 
+// Processors returns the Achaea-specific processors in their intended
+// chain order: output rewrite (drop server-echo blanks), GMCP / telnet
+// dispatch and state mutation, feature processors (Learning, Bashing,
+// TunnelVision).
+//
+// The composition root is responsible for ordering these around generic
+// infrastructure (logging, input translation, output rendering) and user
+// scripts.
+func (w *World) Processors() []app.Processor {
 	return []app.Processor{
-		w.rawLog,
-		processors.Input(),
-		processors.SplitInputProcessor(sep),
-		processors.RepeatInputProcessor(),
-		RewriteOutput,
+		newRewriteOutput(),
 
 		w.state.cmdprocess,
 
@@ -93,77 +92,25 @@ func (w *World) Pre() []app.Processor {
 	}
 }
 
-// Post returns the processors that run after user scripts. Server text
-// becomes UI PrintLine commands here (after any script that might want to
-// drop or rewrite individual lines); then the processed log captures the
-// final batch.
-func (w *World) Post() []app.Processor {
-	return []app.Processor{
-		processors.Output(),
-		w.out,
-	}
-}
-
-// Chain composes the Pre and Post slices around the given user-script
-// processors. With no scripts, the result is just Pre + Post.
-func (w *World) Chain(scripts ...app.Processor) app.Processor {
-	return app.Chain(append(append(w.Pre(), scripts...), w.Post()...)...)
-}
-
-// Processor is a back-compatible shim that returns the full Pre+Post chain
-// with no scripts inserted. Callers that want script support should call
-// New and Chain directly.
-func Processor(logDir string) (processors.Processor, error) {
-	w, err := New(logDir)
-	if err != nil {
-		return nil, err
-	}
-	return w.Chain(), nil
-}
-
-// RewriteOutput drops leading blank lines that the server sends to compensate
-// for echoed player input. With output control we don't need them.
-func RewriteOutput(batch app.Batch) (app.Batch, error) {
-	if len(batch.Events) < 3 {
-		return batch, nil
-	}
-	first, ok := batch.Events[0].(connection.TextLine)
-	if !ok || len(stripANSI(first.Bytes)) != 0 {
-		return batch, nil
-	}
-	// Carry any ANSI prefix forward onto the next line.
-	if len(first.Bytes) > 0 {
-		if second, ok := batch.Events[1].(connection.TextLine); ok {
-			batch.Events[1] = connection.TextLine{
-				Bytes: append(append([]byte{}, first.Bytes...), second.Bytes...),
-			}
-		}
-	}
-	batch.Events = batch.Events[1:]
-	return batch, nil
-}
-
 func (world *world) cmdprocess(batch app.Batch) (app.Batch, error) {
-	for _, ev := range batch.Events {
-		switch ev := ev.(type) {
-		case connection.TelnetCommand:
-			if bytes.Equal(ev.Bytes, connection.IACWillGMCP) {
-				batch = batch.AppendCommand(connection.Send{
-					Bytes: []byte((&gmcp.CoreSupportsSet{
-						"Char":         1,
-						"Char.Items":   1,
-						"Char.Skills":  1,
-						"Comm.Channel": 1,
-						"Room":         1,
-						"IRE.Rift":     1,
-						"IRE.Target":   1,
-					}).Marshal()),
-				})
-			}
-
-		case connection.GMCPFrame:
-			batch = world.dispatchGMCP(batch, ev.Payload)
+	switch ev := batch.Event.(type) {
+	case connection.TelnetCommand:
+		if bytes.Equal(ev.Bytes, connection.IACWillGMCP) {
+			batch = batch.AppendCommand(connection.Send{
+				Bytes: []byte((&gmcp.CoreSupportsSet{
+					"Char":         1,
+					"Char.Items":   1,
+					"Char.Skills":  1,
+					"Comm.Channel": 1,
+					"Room":         1,
+					"IRE.Rift":     1,
+					"IRE.Target":   1,
+				}).Marshal()),
+			})
 		}
+
+	case connection.GMCPFrame:
+		batch = world.dispatchGMCP(batch, ev.Payload)
 	}
 	return batch, nil
 }
