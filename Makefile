@@ -8,11 +8,19 @@ run: test lint
 
 test:
 	@echo "Running tests..."
+ifneq ($(filter test,$(MAKECMDGOALS)),)
 	@go test ./...
+else
+	@output=$$(go test ./... 2>&1) || { printf '%s\n' "$$output"; exit 1; }
+endif
 
 lint:
 	@echo "Running linters..."
+ifneq ($(filter lint,$(MAKECMDGOALS)),)
 	@golangci-lint run
+else
+	@output=$$(golangci-lint run 2>&1) || { printf '%s\n' "$$output"; exit 1; }
+endif
 
 # mocks regenerates the tcell.Screen mock used by platform/tui tests. The
 # mock lives as a _test.go file in the tui package so it ships only at test
