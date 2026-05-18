@@ -2,13 +2,23 @@ package ui
 
 import (
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/internal/navigation"
 )
 
-// PrintLine appends a line to the user-facing scrollback.
+// PrintLine appends (or, when Line.ID is set, overwrites) a line in the
+// user-facing scrollback. Emitters set Line.Raw and Line.Formatted; the UI
+// assigns Line.ID on first print. Reformatters echo the incoming ID back
+// so the UI overwrites the existing slot rather than appending.
 type PrintLine struct {
 	app.CommandMarker
-	Text []byte
+	Line Line
+}
+
+// ReFormat asks the UI to replay every scrollback line back through the
+// processor chain as ReFormatting events, giving processors a chance to
+// rewrite their formatting under whatever policy is now in effect.
+type ReFormat struct {
+	app.CommandMarker
 }
 
 // SetHealth updates the primary health vital.

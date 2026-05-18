@@ -2,7 +2,15 @@ package tui
 
 import (
 	"github.com/gdamore/tcell/v2"
+
+	"github.com/nogfx/nogfx/app/ui"
 )
+
+// outputPadding is the cell used to pad short rows up to the rendered
+// width. It is a non-breaking space (U+00A0) rather than a regular space
+// so the wrap algorithm can distinguish padding (non-breakable filler)
+// from genuine inter-word spacing (a wrap point).
+var outputPadding = NewCell(' ')
 
 // Print shows a message to the user.
 func (tui *TUI) Print(output []byte) {
@@ -13,29 +21,100 @@ func (tui *TUI) Print(output []byte) {
 	tui.Draw()
 }
 
-// Output is the widget where game output is shown.
+// scrollbackLimit caps how many lines the Output buffer keeps.
+const scrollbackLimit = 5000
+
+// Output is the widget where game output is shown. It keeps a parallel
+// slice of ui.Line values (`lines`) alongside the rendered `buffer` so the
+// raw bytes and per-line ID can be replayed later (see ReFormat).
 type Output struct {
 	buffer Rows
+	lines  []ui.Line // lines[i] corresponds to buffer[i]; both most-recent-first
+	byID   map[uint64]int
+	nextID uint64
 	offset int
 	pwidth int
 	style  tcell.Style
 }
 
-// Append adds a new paragraph to the Output.
+// Append adds a new paragraph to the Output. It preserves the original
+// signature for code that has no Line value to forward; AppendLine is the
+// richer entry point that the engine's PrintLine handler uses.
 func (output *Output) Append(data []byte) {
-	row, style := NewRowFromBytes(data, output.style)
+	output.appendLine(ui.Line{Raw: data, Formatted: data})
+}
+
+// AppendLine adds (or, when line.ID is set, overwrites) a paragraph in
+// the Output. Returns the resulting ID, which the caller can echo back
+// to the source if needed.
+func (output *Output) AppendLine(line ui.Line) uint64 {
+	return output.appendLine(line)
+}
+
+func (output *Output) appendLine(line ui.Line) uint64 {
+	if line.Formatted == nil {
+		line.Formatted = line.Raw
+	}
+
+	if line.ID != 0 {
+		if idx, ok := output.byID[line.ID]; ok {
+			row, _ := NewRowFromBytes(line.Formatted, output.style)
+			output.buffer[idx] = row
+			output.lines[idx] = line
+			return line.ID
+		}
+	}
+
+	if line.ID == 0 {
+		output.nextID++
+		line.ID = output.nextID
+	} else if line.ID > output.nextID {
+		output.nextID = line.ID
+	}
+
+	row, style := NewRowFromBytes(line.Formatted, output.style)
 	output.style = style
 
 	output.buffer = output.buffer.prepend(row)
+	output.lines = append([]ui.Line{line}, output.lines...)
+
+	if output.byID == nil {
+		output.byID = map[uint64]int{}
+	}
+	// All existing indices shift by one (prepend).
+	for id := range output.byID {
+		output.byID[id]++
+	}
+	output.byID[line.ID] = 0
 
 	if output.offset > 0 && output.pwidth > 0 {
 		output.offset += len(row.Wrap(output.pwidth))
 	}
 
-	// @todo Completely arbitrary. Evaluate.
-	if len(output.buffer) > 5000 {
-		output.buffer = output.buffer[0:5000]
+	if len(output.buffer) > scrollbackLimit {
+		dropped := output.lines[scrollbackLimit:]
+		for _, l := range dropped {
+			delete(output.byID, l.ID)
+		}
+		output.buffer = output.buffer[0:scrollbackLimit]
+		output.lines = output.lines[0:scrollbackLimit]
 	}
+
+	return line.ID
+}
+
+// Lines returns every scrollback line in chronological (oldest-first)
+// order. Used by ReFormat to replay the buffer as ReFormatting events.
+func (output *Output) Lines() []ui.Line {
+	if len(output.lines) == 0 {
+		return nil
+	}
+	// buffer/lines are most-recent-first; return oldest-first.
+	out := make([]ui.Line, len(output.lines))
+	for i := range output.lines {
+		out[len(output.lines)-1-i] = output.lines[i]
+	}
+	return out
 }
 
 // RenderOutput renders the current Output.
@@ -55,7 +134,7 @@ func (tui *TUI) RenderOutput(width, height int) Rows {
 func RenderOutput(output *Output, width, height int) Rows {
 	rows := Rows{}
 
-	padding := NewCell(' ')
+	padding := outputPadding
 
 	if width == 0 || height == 0 {
 		return rows

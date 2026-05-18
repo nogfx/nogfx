@@ -18,3 +18,21 @@ type Resize struct {
 	app.EventMarker
 	Width, Height int
 }
+
+// ReFormatting is the UI's reply to a ReFormat command: one event per
+// scrollback line in scope, in scrollback order (oldest first). Processors
+// that recognise their own lines emit a replacement PrintLine carrying the
+// same Line.ID so the UI overwrites the slot in place.
+//
+// ReFormatting implements app.GuardedEvent and forbids ReFormat commands
+// in its batch — emitting one would re-enter the same code path and loop.
+type ReFormatting struct {
+	app.EventMarker
+	Line Line
+}
+
+// Forbids implements app.GuardedEvent.
+func (ReFormatting) Forbids(cmd app.Command) bool {
+	_, ok := cmd.(ReFormat)
+	return ok
+}

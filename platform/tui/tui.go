@@ -8,8 +8,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/lib/navigation"
-	"github.com/nogfx/nogfx/ui"
+	"github.com/nogfx/nogfx/app/ui"
+	"github.com/nogfx/nogfx/internal/navigation"
 )
 
 // TUI orchestrates different panes to make up the primary user interface.
@@ -192,6 +192,16 @@ func (tui *TUI) emitEvent(ev app.Event) {
 	tui.events <- ev
 }
 
+// replayReFormat pushes a ReFormatting event for each line, in order. Runs
+// in its own goroutine because the events channel is drained by the
+// engine, which may currently be inside Apply; sending synchronously from
+// Apply could deadlock once the channel buffer fills.
+func (tui *TUI) replayReFormat(lines []ui.Line) {
+	for _, l := range lines {
+		tui.emitEvent(ui.ReFormatting{Line: l})
+	}
+}
+
 // requestDraw asks the Run loop to redraw the screen. Safe to call from any
 // goroutine.
 func (tui *TUI) requestDraw() {
@@ -206,9 +216,18 @@ func (tui *TUI) requestDraw() {
 func (tui *TUI) Apply(cmd app.Command) error {
 	switch c := cmd.(type) {
 	case ui.PrintLine:
-		tui.output.Append(c.Text)
+		tui.output.AppendLine(c.Line)
 		tui.setCache(paneOutput, nil)
 		tui.requestDraw()
+
+	case ui.ReFormat:
+		// Emit ReFormatting events from a dedicated goroutine so we
+		// don't deadlock on the engine's events channel while Apply
+		// is mid-flight (the engine drains events on the same
+		// goroutine that called Apply).
+		if lines := tui.output.Lines(); len(lines) > 0 {
+			go tui.replayReFormat(lines)
+		}
 
 	case ui.SetHealth:
 		tui.vitalsMu.Lock()
