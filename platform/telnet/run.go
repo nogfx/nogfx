@@ -50,7 +50,16 @@ func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
 			continue
 		}
 
-		pending = append(pending, tok[:len(tok)-1])
+		// Achaea (and other Iron Realms games) doesn't negotiate
+		// SuppressGoAhead, so the scanner returns the whole turn as one
+		// GA-terminated token with embedded \r\n line breaks. Split
+		// those into individual lines here so downstream processors
+		// (TunnelVision, the message Aggregator, anything line-aware)
+		// can reason about them. The final line of the GA-terminated
+		// token is the prompt; everything else is regular output.
+		body := tok[:len(tok)-1]
+		pending = append(pending, splitCRLF(body)...)
+
 		lines := pending
 		pending = nil
 
@@ -74,6 +83,18 @@ func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
 
 	events <- connection.StateChanged{Connected: false}
 	return nil
+}
+
+// splitCRLF breaks a chunk of server output into its constituent lines
+// on \r\n boundaries. A trailing CRLF produces an empty final element
+// which we drop. An empty input returns one empty line so a bare prompt
+// (zero-length GA-terminated token) still flows through.
+func splitCRLF(data []byte) [][]byte {
+	parts := bytes.Split(data, []byte("\r\n"))
+	if len(parts) > 1 && len(parts[len(parts)-1]) == 0 {
+		parts = parts[:len(parts)-1]
+	}
+	return parts
 }
 
 // Apply applies a single command to the connection. Commands not targeting
