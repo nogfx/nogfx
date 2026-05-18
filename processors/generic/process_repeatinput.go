@@ -1,11 +1,11 @@
-package processors
+package generic
 
 import (
 	"bytes"
 	"strconv"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/app/connection"
 )
 
 // RepeatInputProcessor expands each connection.Send command whose bytes start

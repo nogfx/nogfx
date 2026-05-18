@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/lib/navigation"
-	"github.com/nogfx/nogfx/ui"
+	"github.com/nogfx/nogfx/app/ui"
+	"github.com/nogfx/nogfx/internal/navigation"
 )
 
 // TestEventsSatisfyAppEvent guards against accidentally dropping the

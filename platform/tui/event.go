@@ -3,7 +3,7 @@ package tui
 import (
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/nogfx/nogfx/ui"
+	"github.com/nogfx/nogfx/app/ui"
 )
 
 // @todo Map more keys, like 271 (delete), 268 (home), 269 (end), 267 (pgdn),

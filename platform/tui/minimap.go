@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/internal/navigation"
 
 	"github.com/gdamore/tcell/v2"
 )

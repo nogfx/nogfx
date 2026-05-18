@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/nogfx/nogfx/app"
-	uipkg "github.com/nogfx/nogfx/ui"
+	uipkg "github.com/nogfx/nogfx/app/ui"
 )
 
 func TestHandleEvent(t *testing.T) {

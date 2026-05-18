@@ -6,7 +6,7 @@ import (
 
 	"github.com/nogfx/nogfx/platform/gmcp"
 	agmcp "github.com/nogfx/nogfx/platform/gmcp/achaea"
-	"github.com/nogfx/nogfx/worlds/achaea"
+	"github.com/nogfx/nogfx/processors/achaea"
 
 	"github.com/icza/gox/gox"
 	"github.com/stretchr/testify/assert"

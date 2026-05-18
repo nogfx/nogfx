@@ -3,7 +3,7 @@ package gmcp
 import (
 	"github.com/icza/gox/gox"
 
-	"github.com/nogfx/nogfx/lib/navigation"
+	"github.com/nogfx/nogfx/internal/navigation"
 )
 
 // AsNavigation converts a Room.Info message into a navigation.Room, looking

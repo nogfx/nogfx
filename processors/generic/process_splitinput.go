@@ -1,10 +1,10 @@
-package processors
+package generic
 
 import (
 	"bytes"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/app/connection"
 )
 
 // SplitInputProcessor splits each connection.Send command on the given

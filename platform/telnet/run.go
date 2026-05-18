@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
+	"github.com/nogfx/nogfx/app/connection"
 )
 
 // Run reads from the underlying transport, tokenises bytes into typed

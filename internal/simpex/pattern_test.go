@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/nogfx/nogfx/lib/simpex"
+	"github.com/nogfx/nogfx/internal/simpex"
 
 	"github.com/stretchr/testify/assert"
 )

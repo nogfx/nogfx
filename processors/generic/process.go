@@ -5,10 +5,10 @@
 //
 // Worlds compose these alongside their own processors when assembling
 // their chain.
-package processors
+package generic
 
 import "github.com/nogfx/nogfx/app"
 
 // Processor is a convenience alias for app.Processor so callers can spell
-// the type as processors.Processor where it reads more naturally.
+// the type as generic.Processor where it reads more naturally.
 type Processor = app.Processor

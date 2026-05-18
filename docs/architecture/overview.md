@@ -27,61 +27,65 @@ nogfx/
       main.go          — entry point; composition root only, no logic
       env.go           — runtime config (nogfx home dir, version constant)
   app/                 — abstract pipeline core
-    batch.go           — Batch {Events, Commands} envelope
+    batch.go           — Batch {Event, Events, Commands} envelope
     processor.go       — Processor signature + Chain composer
-    event.go           — Event interface + EventMarker
+    event.go           — Event interface + EventMarker + GuardedEvent
     command.go         — Command interface + CommandMarker
     endpoint.go        — Endpoint interface satisfied by every platform impl
-    engine.go          — pumps batches between endpoints
-  connection/          — contract for the network endpoint
-    events.go          — TextLine, Prompt, TelnetCommand, GMCPFrame, StateChanged
-    commands.go        — Send, Reconnect, Disconnect
-    iac.go             — IAC byte sequences (WillEcho, WontEcho, WillGMCP)
-  ui/                  — contract for the user-facing endpoint
-    events.go          — Input, Resize
-    commands.go        — PrintLine, SetHealth, SetMana, AddVital, SetVital,
-                         RemoveVital, SetCharacter, SetTarget, SetRoom,
-                         MaskInput, UnmaskInput
-    snapshots.go       — Target snapshot
-  platform/            — substrate adapters; implement app.Endpoint
+    engine.go          — pumps batches between endpoints, drains derived events
+    connection/        — contract for the network endpoint
+      events.go        — TextLine, Prompt, TelnetCommand, GMCPFrame, StateChanged
+      commands.go      — Send, Reconnect, Disconnect
+      iac.go           — IAC byte sequences (WillEcho, WontEcho, WillGMCP)
+    ui/                — contract for the user-facing endpoint
+      events.go        — Input, Resize, ReFormatting
+      commands.go      — PrintLine, ReFormat, SetHealth, SetMana, AddVital,
+                         SetVital, RemoveVital, SetCharacter, SetTarget,
+                         SetRoom, MaskInput, UnmaskInput
+      line.go          — Line {Raw, Formatted, ID}
+      snapshots.go     — Target snapshot
+  platform/            — substrate adapters; bridge to external libraries
     telnet/            — Connection implementation; tokenisation
     gmcp/              — typed GMCP messages (parse / marshal)
     tui/               — UI implementation (tcell)
-  processors/          — generic, world-agnostic processors
-  worlds/              — game-specific processor bundles
-    achaea/            — Character, Target, Learning, TunnelVision, Bashing
-  lib/                 — general-purpose libraries; depend on nothing in-project
-    simpex/            — pattern matching
-    navigation/        — graph and pathfinding
-  internal/
+  processors/          — chain participants, generic and world-specific
+    generic/           — MUD-agnostic processors (Input, Output, Decode, Render,
+                         LogProcessor, MatchInput/Output, SplitInput, RepeatInput)
+    achaea/            — Achaea world: World, Character, Target, Learning,
+                         TunnelVision, Bashing, agmcp dispatch
+  internal/            — would-be standalone libraries, under development
+    simpex/            — pattern matching (slated to move to its own module)
+    navigation/        — graph and pathfinding (placeholder; will grow)
+  tests/               — project-meta tests not tied to a single package
     architecture/      — dependency-rule test
 ```
 
-Dependency direction. These rules are enforced by [`internal/architecture/architecture_test.go`](../../internal/architecture/architecture_test.go), which classifies each package by path and verifies its imports against an allow-list. The categories below match the constants defined there.
+Dependency direction. These rules are enforced by [`tests/architecture/architecture_test.go`](../../tests/architecture/architecture_test.go), which classifies each package by path and verifies its imports against an allow-list. The categories below match the constants defined there.
 
 | Category | Packages | May import |
 | --- | --- | --- |
 | `app` | `app` | nothing else in the project |
-| `lib` | `lib/*` | nothing else in the project |
-| `contract` | `connection`, `ui` | `app`, `lib` |
+| `contract` | `app/connection`, `app/ui` | `app`, `lib` |
+| `lib` | `internal/*` | nothing else in the project |
 | `codec` | `platform/gmcp`, `platform/gmcp/*` | `lib` |
 | `endpoint` | `platform/telnet`, `platform/tui` | `app`, `contract`, `lib` |
-| `processors` | `processors` | `app`, `contract`, `lib`, `codec` |
-| `world` | `worlds/*` | `app`, `contract`, `lib`, `codec`, `processors` |
+| `processors-generic` | `processors/generic` | `app`, `contract`, `lib`, `codec` |
+| `processors-world` | `processors/<world>` and subpackages | `app`, `contract`, `lib`, `codec`, `processors-generic` |
 | `cmd` | `cmd/*` | everything (composition root) |
 
-Same-category imports are always allowed (e.g. `platform/gmcp/achaea` may import `platform/gmcp`).
+Same-category imports are always allowed (e.g. `platform/gmcp/achaea` may import `platform/gmcp`). Tests under `tests/` sit outside the rule set.
 
 Notes on what each rule expresses:
 
 - **`app` and `lib` are leaves.** They depend on nothing in the project so that either can be extracted as a separate module without dragging the rest along.
-- **Contracts (`connection`, `ui`) do not import each other.** Each endpoint's contract is independent, so adding a UI capability does not affect the connection package and vice versa.
+- **Contracts live under `app/`** so the abstract trigger types (Event, Command) sit next to the concrete event/command vocabularies that implement them. Each contract (`app/connection`, `app/ui`) is independent — they do not import each other, so adding a UI capability does not affect the connection package and vice versa.
+- **`lib` is `internal/`** — would-be standalone libraries that depend on nothing in-project. The `internal/` location signals they are not part of any public surface yet; once a library stabilises (e.g. `simpex` is slated to move to its own module) it can be promoted out without changing the import direction.
 - **The codec (`platform/gmcp`) does not import an endpoint.** GMCP messages are pure data; the wire transport (telnet) is separate. Worlds and processors can decode GMCP without dragging in telnet.
 - **Endpoints do not import each other.** `platform/telnet` and `platform/tui` are siblings; if telnet ever needed to know about the UI it would mean we'd put logic in the wrong place.
-- **Worlds do not import endpoints or the engine.** A world is just a `Processor` that runs against the contracts; it cannot reach down into a specific transport implementation or up into the engine wiring.
-- **`app/` defines a single `Endpoint` interface** that both telnet and tui satisfy structurally. The Engine references it directly, so the abstract pipeline core stays free of in-project imports while still owning the engine wiring. `cmd/nogfx/main.go` is the only place that knows which concrete endpoint implementations are in use.
-- `worlds/*` imports `app/`, `connection/`, `ui/`, `platform/gmcp`, `processors/`, `lib/*`. Same reasoning as processors: a world emits both server commands (Send) and UI commands.
-- `cmd/nogfx/main.go` imports everything and wires it together.
+- **`processors/generic` and `processors/<world>` share a parent** because both are chain participants implementing `app.Processor`. The asymmetry is in generality, expressed by the subdirectory — `generic/` is MUD-agnostic; `<world>/` carries world-specific state and feature processors. Worlds may import generic; generic may not import worlds.
+- **Worlds do not import endpoints or the engine.** A world is just a bundle of processors that run against the contracts; it cannot reach down into a specific transport implementation or up into the engine wiring.
+- **`app/` defines a single `Endpoint` interface** that both telnet and tui satisfy structurally. The Engine references it directly, so the abstract pipeline core stays free of endpoint-specific imports while still owning the engine wiring. `cmd/nogfx/main.go` is the only place that knows which concrete endpoint implementations are in use.
+- **`cmd/nogfx/main.go` imports everything** and wires it together.
 
 The repository root holds only directories and non-code files (README, LICENSE, go.mod, Makefile, etc.).
 
@@ -94,20 +98,29 @@ type Event   interface { isEvent()   }   // marker only; concrete types live in 
 type Command interface { isCommand() }   // marker only; concrete types live in contract packages
 
 type Batch struct {
-    Events   []Event
-    Commands []Command
+    Event    Event     // the trigger that started this batch
+    Events   []Event   // derived events to be re-emitted as their own batches
+    Commands []Command // commands to dispatch to the endpoints
 }
 
 type Processor func(Batch) (Batch, error)
 ```
 
-A **Batch** is the unit of work flowing through the processor chain. It starts with one or more triggering events (something arrived from the server, or the user pressed enter) and accumulates as processors run — each processor reads what's there, optionally appends events (derived facts, recognised patterns) and commands (intent for an endpoint), and passes the batch along. Keeping events alongside commands as the batch flows is the point: a script several stages downstream can look at `batch.Events` and see the whole story of *why* a given command was added, then decide to modify, drop, or augment it.
+A **Batch** is the unit of work flowing through the processor chain, anchored on a single triggering event. Each event arriving from an endpoint becomes its own batch; processors decide whether to act based on the type of `batch.Event`, may rewrite or suppress it (set `batch.Event = nil`), and may append **commands** for the endpoints to apply and **derived events** that the engine will re-emit as their own batches downstream.
 
-**Events** identify something that happened. Concrete event types live in the contract package owned by their originating endpoint — `connection.TextLine`, `connection.Prompt`, `connection.GMCPFrame`, `ui.Input`, `ui.Resize`, and so on. Processors may also synthesise their own events to represent recognised patterns or derived state (e.g. a world processor emitting `SkillUsed`). All concrete events embed `app.EventMarker` to satisfy `app.Event`.
+**Ordering invariants**, enforced by the engine loop:
 
-**Commands** identify something to be done. Concrete command types live in the contract package owned by the endpoint that applies them — `connection.Send`, `connection.Reconnect`, `ui.PrintLine`, `ui.SetHealth`, `ui.AddVital`, and so on. All concrete commands embed `app.CommandMarker`. The engine routes each command to the endpoint that owns its type at the end of every batch; processors never name a target explicitly.
+1. Within a batch, all `Commands` are applied (in order) before any derived `Events` are re-emitted.
+2. Derived `Events` are re-emitted in their appended order, each as its own batch, before the engine returns to reading new events from the endpoint channel.
+3. Any apply-consequence event from an endpoint (e.g. the server responding to a `Send`) therefore lands *after* the entire chain reaction triggered by the original event has completed.
 
-A processor's job is to read events, append events and commands as it sees fit, and return the batch. Processors run in a fixed order in the chain; later processors see what earlier ones produced. The same chain handles both directions — there is no "inbound" vs "outbound" mode. A `ui.Input` event triggers some processor to emit a `connection.Send`; a `connection.TextLine` event triggers some processor to emit `ui.PrintLine`. Many processors react in only one direction; some legitimately span both.
+The mechanism is a local FIFO queue of derived events that the engine drains before reading the endpoint channel. This is why a processor can confidently append a derived event knowing the rest of the chain reaction will run to completion before any unrelated apply-consequence interleaves.
+
+**Events** identify something that happened. Concrete event types live in the contract package owned by their originating endpoint — `connection.TextLine`, `connection.Prompt`, `connection.GMCPFrame`, `ui.Input`, `ui.Resize`, and so on. Processors may also synthesise their own derived events to represent recognised patterns or decoded state (e.g. `processors.DecodedGMCP` carrying a typed `gmcp.Message`). All concrete events embed `app.EventMarker` to satisfy `app.Event`.
+
+**Commands** identify something to be done. Concrete command types live in the contract package owned by the endpoint that applies them — `connection.Send`, `connection.Reconnect`, `ui.PrintLine`, `ui.SetHealth`, `ui.AddVital`, and so on. All concrete commands embed `app.CommandMarker`. The engine routes each command to the endpoint that owns its type by attempting dispatch through each endpoint in turn; processors never name a target explicitly.
+
+A processor's job is to read `batch.Event`, append events and commands as it sees fit, and return the batch. Processors run in a fixed order in the chain; later processors see what earlier ones produced. The same chain handles both directions — there is no "inbound" vs "outbound" mode. A `ui.Input` event triggers some processor to emit a `connection.Send`; a `connection.TextLine` event triggers some processor to emit `ui.PrintLine`. Many processors react in only one direction; some legitimately span both. Processors that need to consolidate across multiple events (e.g. paired suppression, multi-line summaries) must carry explicit state across batches, since each event arrives as its own independent batch.
 
 ## Processors
 
@@ -122,57 +135,46 @@ Every processor implements the same `Processor` signature. They differ along two
 - **`Input`** — converts `ui.Input` events into `connection.Send` commands, handling separator splitting and repeat-on-prefix.
 - **`Log`** — appends the event/command stream to a file.
 
-**Game-specific processors** live in `worlds/<world>/` and know how a particular MUD works. They decode the game's GMCP extensions, recognise game-specific patterns in text output, maintain rich game state, and emit commands that go beyond the generic baseline (custom vitals, target tracking, learning, tunnel vision, balance timing, …).
+**Game-specific processors** live in `processors/<world>/` and know how a particular MUD works. They decode the game's GMCP extensions, recognise game-specific patterns in text output, maintain rich game state, and emit commands that go beyond the generic baseline (custom vitals, target tracking, learning, tunnel vision, balance timing, …).
 
 **User scripts** are also processors. They live in the user's configuration directory and are loaded at startup in a deterministic order (filename or config).
 
 All three sources implement the same `Processor` signature and slot into the same chain. The source axis is about ownership and lifecycle, not about runtime behaviour.
 
-### Phase
+### Composition
 
-The chain is split into three explicit phases. Within each phase, processors run in the order they appear in their slice — that listing order is the only sequencing primitive, no per-processor priority numbers.
-
-- **Pre** — decoding, baseline rendering, state mutation, input translation, feature processors. Anything that should see clean events from the outside world before scripts get a chance to modify them.
-- **Scripts** — user scripts. Read everything Pre produced; their output is what reaches Post and the endpoints.
-- **Post** — logging, rate limiting, final dedupe or coalesce. Anything that should see the final decided state after scripts.
-
-The world contributes `Pre()` and `Post()`; the engine inserts user scripts between them at composition time:
+The chain is assembled by `cmd/nogfx/main.go` — the composition root. Worlds know only about themselves; they do not wrap scripts, own logging, or know which generic processors run around them. The composition root knows everything and decides the order.
 
 ```go
-// worlds/achaea/achaea.go
-type World struct { state *State }
+// cmd/nogfx/main.go
+chain := app.Chain(append(append(append(
+    preWorld,        // raw log, Input, SplitInput, RepeatInput, …
+    worldProcs...),  // world.Processors()
+    scripts...),     // user-loaded
+    postWorld...,    // Output, session log, …
+)...)
+```
 
-func New() *World { return &World{state: newState()} }
+```go
+// processors/achaea/achaea.go
+type World struct { state *world; tv TunnelVision }
 
-func (w *World) Pre() []app.Processor {
+func New() *World { return &World{ ... } }
+
+func (w *World) Processors() []app.Processor {
     return []app.Processor{
-        processors.Decode(),                  // generic
-        processors.Render(),                  // generic
-        processors.Input(';'),                // generic
-        w.state.GMCPDispatch(),               // game-specific
-        features.Learning(w.state),           // game-specific
-        features.TunnelVision(w.state),       // game-specific
-    }
-}
-
-func (w *World) Post() []app.Processor {
-    return []app.Processor{
-        processors.Log(...),                  // generic
+        newRewriteOutput(),       // drop server's blank-echo lines
+        w.state.cmdprocess,       // Achaea GMCP dispatch + state mutation
+        (&Learning{}).Processor(),
+        NewBashing(w.state).Processor(),
+        w.tv.rewriteProcessor(),
     }
 }
 ```
 
-Composition happens in the engine wiring:
+The world contributes one slice; the composition root sandwiches it. There is no "Pre" / "Post" split on the world itself — what used to be Pre and Post is now whatever main.go wraps around the world's slice, plus the order within the world's slice itself.
 
-```go
-chain := app.Chain(
-    append(append(world.Pre(), scripts...), world.Post()...)...,
-)
-```
-
-Most processors land in Pre. Post starts thin — typically just logging — and grows only when something legitimately needs to act on what survived the script layer.
-
-Scripts default to the `Scripts` phase. The rare script that needs to run earlier or later (a script wanting raw events before generic decoding, or one that finalises Send-command rate limiting) can opt into `Pre` or `Post` explicitly when registered. The 90% case is "this script reacts to processed events and adjusts the resulting commands" — it goes in `Scripts` without anyone having to think about ordering.
+Scripts go between the world and the generic output stage: they see the events the world has decoded and the commands it has staged, and can modify either before logging and `ui.PrintLine` commit them. A script that wants to run earlier or later doesn't yet have a knob — when one's needed it'll be a configuration choice at composition, not a world API change.
 
 ## The two ports: Connection and UI
 
@@ -180,7 +182,7 @@ The pipeline has two endpoints. They are asymmetric in their domain — one spea
 
 ### Connection
 
-Represents the network endpoint. Its read path is a **tokeniser** — raw bytes are turned into typed events at the boundary, so no processor sees raw bytes. The concrete event types live in the `connection/` contract package:
+Represents the network endpoint. Its read path is a **tokeniser** — raw bytes are turned into typed events at the boundary, so no processor sees raw bytes. The concrete event types live in the `app/connection/` contract package:
 
 - `connection.TextLine` — one paragraph of output text.
 - `connection.Prompt` — a GA-terminated prompt line. (Today this logic is buried in `engine.go`.)
@@ -199,7 +201,7 @@ Tokenisation is part of `platform/telnet/` — it is the connection's read imple
 
 ### UI
 
-Represents the terminal endpoint. Its read path produces events from the `ui/` contract package:
+Represents the terminal endpoint. Its read path produces events from the `app/ui/` contract package:
 
 - `ui.Input{Bytes}` — a line the user submitted (after pressing enter; UI buffers keystrokes locally).
 - `ui.Resize`, future `ui.WidgetClicked`, etc.
@@ -222,15 +224,15 @@ This eliminates the need for handles, callbacks, or lifecycle events for widget 
 
 ## Worlds and rich state
 
-A world is the bundle of game-specific processors plus the rich state they consult. For Achaea, `worlds/achaea/state/` holds `Character` (with all the Achaea fields — vitals, balance, stances, Ki, Karma, etc.), `Target`, `Area`, and the methods that mutate them from typed GMCP events. The Achaea world is the only place that ever sees this rich state; commands going to the UI are the projections.
+A world is the bundle of game-specific processors plus the rich state they consult. For Achaea, `processors/achaea/` holds `Character` (with all the Achaea fields — vitals, balance, stances, Ki, Karma, etc.), `Target`, `Area`, and the methods that mutate them from typed GMCP events. The Achaea world is the only place that ever sees this rich state; commands going to the UI are the projections.
 
 ### Room duplication
 
-`app.Room` (the perceived room: description, exits, items, present npcs) and `lib/navigation.Node` (the graph node: id, coordinates, edges) are intentionally separate types that share the name "room" only in conversation. The translation between them happens inside the world adapter, because the mapping is game-specific. Do not introduce a shared `Room` interface — the duplication carries information about which concern owns the data.
+`app/ui.Room` (the perceived room: description, exits, items, present npcs) and `internal/navigation.Node` (the graph node: id, coordinates, edges) are intentionally separate types that share the name "room" only in conversation. The translation between them happens inside the world adapter, because the mapping is game-specific. Do not introduce a shared `Room` interface — the duplication carries information about which concern owns the data.
 
 ## Data flow
 
-There is one chain, and it handles both directions. The phases (Pre → Scripts → Post) are the same; what differs between directions is which events arrive and which commands the chain produces.
+There is one chain, and it handles both directions. The order is the same; what differs between directions is which events arrive and which commands the chain produces.
 
 Inbound (something arrived from the server):
 
@@ -239,19 +241,23 @@ socket bytes
   → platform/telnet
        (tokenise; emit connection.TextLine, connection.Prompt,
         connection.TelnetCommand, connection.GMCPFrame)
-  → app/Engine wraps events into a Batch
+  → app/Engine wraps the event into a Batch
 
-  ── Pre phase ──
-  → processors/Decode          (connection.GMCPFrame → typed GMCP message events)
-  → processors/Render          (typed GMCP events → baseline ui.* commands)
-  → worlds/<world>/Pre         (game-specific GMCP dispatch, state mutation,
-                                feature processors)
+  ── composition-root pre-world ──
+  → raw log
+  → processors/Input, SplitInput, RepeatInput (no-ops for inbound events)
 
-  ── Scripts phase ──
+  ── world.Processors() ──
+  → world's output rewrite                  (drop server-echo blanks etc.)
+  → world's GMCP dispatch + state mutation  (Achaea's agmcp.Parse, vitals, target)
+  → world's feature processors              (Learning, Bashing, TunnelVision, …)
+
+  ── scripts ──
   → user scripts               (may modify or originate any event or command)
 
-  ── Post phase ──
-  → worlds/<world>/Post        (typically just logging)
+  ── composition-root post-world ──
+  → processors/Output          (connection.TextLine / .Prompt → ui.PrintLine)
+  → session log
 
   → app/Engine drains:
        ui.* commands → ui port Apply
@@ -265,16 +271,21 @@ user presses enter
   → platform/tui emits ui.Input event
   → app/Engine wraps event into a Batch
 
-  ── Pre phase ──
-  → processors/Input           (ui.Input → connection.Send; separator split;
-                                repeat prefix)
-  → worlds/<world>/Pre         (alias and macro expansion on connection.Send)
+  ── composition-root pre-world ──
+  → raw log
+  → processors/Input           (ui.Input → connection.Send)
+  → processors/SplitInput      (separator split)
+  → processors/RepeatInput     (repeat prefix)
 
-  ── Scripts phase ──
+  ── world.Processors() ──
+  → world processors           (alias and macro expansion on connection.Send)
+
+  ── scripts ──
   → user scripts
 
-  ── Post phase ──
-  → worlds/<world>/Post        (logging; future rate limiting)
+  ── composition-root post-world ──
+  → processors/Output          (no-op for outbound)
+  → session log
 
   → app/Engine drains:
        connection.* commands → connection port Apply (Send writes the bytes)

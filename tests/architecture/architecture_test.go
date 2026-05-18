@@ -1,10 +1,11 @@
 // Package architecture_test verifies that every in-module package only
 // imports from other categories the architecture permits.
 //
-// The check classifies each package by path into a Category (app, lib,
-// contract, codec, endpoint, processors, world, runtime, cmd) and looks
-// up the set of categories that category is allowed to depend on. Any
-// internal import that isn't in the allowed set is reported as a failure.
+// The check classifies each package by path into a Category (app,
+// contract, lib, codec, endpoint, processors-generic, processors-world,
+// cmd) and looks up the set of categories that category is allowed to
+// depend on. Any internal import that isn't in the allowed set is
+// reported as a failure.
 //
 // The categories and the allow-list together encode the architecture
 // described in docs/architecture/overview.md. Changing either side should
@@ -26,18 +27,21 @@ type Category string
 
 const (
 	// CategoryApp is the abstract pipeline core: Batch, Event, Command,
-	// Processor, Chain. Imports nothing else in the project.
+	// Processor, Chain, Endpoint, Engine. Imports nothing else in the
+	// project.
 	CategoryApp Category = "app"
 
-	// CategoryLib holds general-purpose libraries usable by anything in
-	// the project. They import nothing else in the project so they stay
-	// extractable.
-	CategoryLib Category = "lib"
-
 	// CategoryContract is an endpoint contract: the events the endpoint
-	// emits and the commands it accepts. Imports only the abstract core
-	// and shared libraries.
+	// emits and the commands it accepts. Lives under app/ as a
+	// subpackage so the contract sits next to the abstract core it
+	// implements.
 	CategoryContract Category = "contract"
+
+	// CategoryLib holds would-be standalone libraries that live under
+	// internal/ while still under development. Once a library stabilises
+	// it can be promoted to its own module. Imports nothing else in the
+	// project so the promotion stays mechanical.
+	CategoryLib Category = "lib"
 
 	// CategoryCodec is the GMCP wire codec — typed message definitions
 	// and decoders. Imports lib (for navigation conversions) but not
@@ -45,17 +49,18 @@ const (
 	CategoryCodec Category = "codec"
 
 	// CategoryEndpoint is an endpoint implementation (telnet, tui).
-	// Imports the abstract core, its own contract, and libraries.
+	// Imports the abstract core, contracts, and libraries.
 	CategoryEndpoint Category = "endpoint"
 
-	// CategoryProcessors holds generic, world-agnostic processors that
-	// translate between contracts and the codec.
-	CategoryProcessors Category = "processors"
+	// CategoryProcessorsGeneric holds MUD-agnostic processors that
+	// translate between contracts and the codec. May be imported by
+	// processors-world but not the other way around.
+	CategoryProcessorsGeneric Category = "processors-generic"
 
-	// CategoryWorld is a game-specific plugin. May import the codec,
-	// contracts, libraries, and generic processors, but never endpoint
-	// implementations or the runtime.
-	CategoryWorld Category = "world"
+	// CategoryProcessorsWorld is a game-specific processor bundle. May
+	// import the codec, contracts, libraries, and generic processors.
+	// Never imports endpoint implementations or the binary entry point.
+	CategoryProcessorsWorld Category = "processors-world"
 
 	// CategoryCmd is the binary entry point. May import everything.
 	CategoryCmd Category = "cmd"
@@ -69,23 +74,23 @@ func classify(importPath string) Category {
 	switch {
 	case rel == "app":
 		return CategoryApp
-	case rel == "connection", rel == "ui":
+	case rel == "app/connection", rel == "app/ui":
 		return CategoryContract
-	case strings.HasPrefix(rel, "lib/"):
+	case strings.HasPrefix(rel, "internal/"):
 		return CategoryLib
 	case rel == "platform/gmcp", strings.HasPrefix(rel, "platform/gmcp/"):
 		return CategoryCodec
 	case strings.HasPrefix(rel, "platform/"):
 		return CategoryEndpoint
-	case rel == "processors":
-		return CategoryProcessors
-	case strings.HasPrefix(rel, "worlds/"):
-		return CategoryWorld
+	case rel == "processors/generic":
+		return CategoryProcessorsGeneric
+	case strings.HasPrefix(rel, "processors/"):
+		// Any non-generic processors/<name>/... is a world bundle.
+		return CategoryProcessorsWorld
 	case strings.HasPrefix(rel, "cmd/"):
 		return CategoryCmd
-	case strings.HasPrefix(rel, "internal/"):
-		// Internal test/tooling packages live outside the runtime
-		// dependency graph; we don't enforce rules on them.
+	case strings.HasPrefix(rel, "tests/"):
+		// Project-meta tests sit outside the rule set.
 		return ""
 	}
 	return ""
@@ -95,16 +100,19 @@ func classify(importPath string) Category {
 // from. The current category is implicitly allowed (a codec package may
 // import another codec package, etc.).
 var allowed = map[Category][]Category{
-	CategoryApp:        {},
-	CategoryLib:        {},
-	CategoryContract:   {CategoryApp, CategoryLib},
-	CategoryCodec:      {CategoryLib},
-	CategoryEndpoint:   {CategoryApp, CategoryContract, CategoryLib},
-	CategoryProcessors: {CategoryApp, CategoryContract, CategoryLib, CategoryCodec},
-	CategoryWorld:      {CategoryApp, CategoryContract, CategoryLib, CategoryCodec, CategoryProcessors},
+	CategoryApp:               {},
+	CategoryLib:               {},
+	CategoryContract:          {CategoryApp, CategoryLib},
+	CategoryCodec:             {CategoryLib},
+	CategoryEndpoint:          {CategoryApp, CategoryContract, CategoryLib},
+	CategoryProcessorsGeneric: {CategoryApp, CategoryContract, CategoryLib, CategoryCodec},
+	CategoryProcessorsWorld: {
+		CategoryApp, CategoryContract, CategoryLib, CategoryCodec,
+		CategoryProcessorsGeneric,
+	},
 	CategoryCmd: {
 		CategoryApp, CategoryContract, CategoryLib, CategoryCodec,
-		CategoryEndpoint, CategoryProcessors, CategoryWorld,
+		CategoryEndpoint, CategoryProcessorsGeneric, CategoryProcessorsWorld,
 	},
 }
 
@@ -112,8 +120,8 @@ func TestPackagesAreClassified(t *testing.T) {
 	pkgs := loadModulePackages(t)
 	for _, pkg := range pkgs {
 		rel := strings.TrimPrefix(pkg.PkgPath, modulePath+"/")
-		if strings.HasPrefix(rel, "internal/") {
-			continue // internal tooling sits outside the rule set
+		if strings.HasPrefix(rel, "tests/") {
+			continue // project-meta tests sit outside the rule set
 		}
 		if classify(pkg.PkgPath) == "" {
 			t.Errorf("package %q has no architectural category — extend classify() in this file", pkg.PkgPath)

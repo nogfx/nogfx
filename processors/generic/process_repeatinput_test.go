@@ -1,4 +1,4 @@
-package processors_test
+package generic_test
 
 import (
 	"testing"
@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/nogfx/nogfx/app"
-	"github.com/nogfx/nogfx/connection"
-	"github.com/nogfx/nogfx/processors"
+	"github.com/nogfx/nogfx/app/connection"
+	"github.com/nogfx/nogfx/processors/generic"
 )
 
 func TestRepeatInputProcessor(t *testing.T) {
@@ -72,7 +72,7 @@ func TestRepeatInputProcessor(t *testing.T) {
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
-			proc := processors.RepeatInputProcessor()
+			proc := generic.RepeatInputProcessor()
 
 			var batch app.Batch
 			for _, b := range tc.input {
