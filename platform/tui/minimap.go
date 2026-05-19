@@ -54,6 +54,7 @@ func RenderMap(room *navigation.Room, width, height int) Rows {
 	return mmap.rows
 }
 
+//nolint:gocyclo // per-direction rendering cases share local state and are clearest inline.
 func (mmap Minimap) render(room *navigation.Room, x, y int) []maproom {
 	// Make sure we have enough padding to render room and exits.
 	if x < 2 || y < 1 || y > len(mmap.rows)-2 || x > len(mmap.rows[0])-3 {
@@ -97,11 +98,13 @@ func (mmap Minimap) render(room *navigation.Room, x, y int) []maproom {
 			if room.HasExit("d") {
 				mmap.rows[y][x].Content = '='
 				mmap.rows[y][x].Foreground(tcell.Color245)
+
 				continue
 			}
 
 			mmap.rows[y][x].Content = '^'
 			mmap.rows[y][x].Foreground(tcell.Color245)
+
 			continue
 
 		case "d":
@@ -115,6 +118,7 @@ func (mmap Minimap) render(room *navigation.Room, x, y int) []maproom {
 
 			mmap.rows[y][x].Content = 'v'
 			mmap.rows[y][x].Foreground(tcell.Color245)
+
 			continue
 
 		case "in":
@@ -144,6 +148,7 @@ func (mmap Minimap) render(room *navigation.Room, x, y int) []maproom {
 		}
 
 		var dirchar rune
+
 		switch direction {
 		case "n":
 			dirchar = '|'
@@ -183,6 +188,7 @@ func (mmap Minimap) render(room *navigation.Room, x, y int) []maproom {
 		if diffx > 0 || diffx < 0 {
 			diffx = diffx*4 - rel(3, diffx)
 		}
+
 		if diffy > 0 || diffy < 0 {
 			diffy = diffy*2 - rel(1, diffy)
 		}

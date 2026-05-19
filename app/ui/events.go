@@ -34,5 +34,6 @@ type ReFormatting struct {
 // Forbids implements app.GuardedEvent.
 func (ReFormatting) Forbids(cmd app.Command) bool {
 	_, ok := cmd.(ReFormat)
+
 	return ok
 }

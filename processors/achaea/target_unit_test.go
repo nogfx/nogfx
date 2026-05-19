@@ -68,15 +68,19 @@ func TestTargetingLogic(t *testing.T) {
 			if tc.candidates != nil {
 				tgt.SetCandidates(tc.candidates)
 			}
+
 			if tc.present != nil {
 				tgt.SetPresent(tc.present)
 			}
+
 			for _, name := range tc.enters {
 				tgt.AddPresent(name)
 			}
+
 			for _, name := range tc.leaves {
 				tgt.RemovePresent(name)
 			}
+
 			if tc.newcandidates != nil {
 				tgt.SetCandidates(tc.newcandidates)
 			}
@@ -85,6 +89,7 @@ func TestTargetingLogic(t *testing.T) {
 			for _, b := range tgt.DrainSends() {
 				sent = append(sent, string(b))
 			}
+
 			assert.Equal(t, tc.sets, sent)
 		})
 	}

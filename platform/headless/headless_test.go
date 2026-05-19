@@ -20,26 +20,32 @@ func TestHeadless_RunEmitsInputPerLine(t *testing.T) {
 	h := headless.NewWithIO(in, &bytes.Buffer{})
 
 	events := make(chan app.Event, 8)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	done := make(chan error, 1)
+
 	go func() { done <- h.Run(ctx, events) }()
 
 	var got []string
+
 	for i := 0; i < 3; i++ {
 		select {
 		case ev := <-events:
 			input, ok := ev.(ui.Input)
 			require.True(t, ok, "expected ui.Input, got %T", ev)
+
 			got = append(got, string(input.Bytes))
 		case <-time.After(time.Second):
 			t.Fatalf("timed out waiting for input %d", i)
 		}
 	}
+
 	cancel()
 
 	assert.Equal(t, []string{"look", "score", "quit"}, got)
+
 	if err := <-done; err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}

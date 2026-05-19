@@ -37,7 +37,9 @@ func (c *fakeConn) Run(ctx context.Context, events chan<- app.Event) error {
 		case events <- ev:
 		}
 	}
+
 	<-ctx.Done()
+
 	return nil
 }
 
@@ -47,18 +49,22 @@ func (c *fakeConn) Apply(cmd app.Command) error {
 		c.mu.Lock()
 		c.applied = append(c.applied, cmd)
 		c.mu.Unlock()
+
 		select {
 		case c.sendBack <- struct{}{}:
 		default:
 		}
+
 		return nil
 	}
+
 	return app.ErrCommandNotApplicable
 }
 
 func (c *fakeConn) Applied() []app.Command {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	return append([]app.Command{}, c.applied...)
 }
 
@@ -83,7 +89,9 @@ func (u *fakeUI) Run(ctx context.Context, events chan<- app.Event) error {
 		case events <- ev:
 		}
 	}
+
 	<-ctx.Done()
+
 	return nil
 }
 
@@ -95,18 +103,22 @@ func (u *fakeUI) Apply(cmd app.Command) error {
 		u.mu.Lock()
 		u.applied = append(u.applied, cmd)
 		u.mu.Unlock()
+
 		select {
 		case u.sendBack <- struct{}{}:
 		default:
 		}
+
 		return nil
 	}
+
 	return app.ErrCommandNotApplicable
 }
 
 func (u *fakeUI) Applied() []app.Command {
 	u.mu.Lock()
 	defer u.mu.Unlock()
+
 	return append([]app.Command{}, u.applied...)
 }
 
@@ -118,6 +130,7 @@ func runEngine(t *testing.T, conn *fakeConn, gui *fakeUI, proc app.Processor, ex
 	defer cancel()
 
 	done := make(chan error, 1)
+
 	go func() {
 		e := &app.Engine{
 			Connection: conn,
@@ -129,6 +142,7 @@ func runEngine(t *testing.T, conn *fakeConn, gui *fakeUI, proc app.Processor, ex
 
 	// Wait for the expected number of Apply calls, with a short timeout.
 	deadline := time.After(time.Second)
+
 	got := 0
 	for got < expectN {
 		select {
@@ -142,6 +156,7 @@ func runEngine(t *testing.T, conn *fakeConn, gui *fakeUI, proc app.Processor, ex
 	}
 
 	cancel()
+
 	select {
 	case <-done:
 	case <-time.After(time.Second):
@@ -158,6 +173,7 @@ func TestEngine_RoutesConnectionCommandsToConnection(t *testing.T) {
 		if in, ok := b.Event.(ui.Input); ok {
 			b = b.AppendCommand(connection.Send{Bytes: in.Bytes})
 		}
+
 		return b, nil
 	}
 
@@ -176,6 +192,7 @@ func TestEngine_RoutesUICommandsToUI(t *testing.T) {
 		if tl, ok := b.Event.(connection.TextLine); ok {
 			b = b.AppendCommand(ui.PrintLine{Line: ui.Line{Raw: tl.Bytes, Formatted: tl.Bytes}})
 		}
+
 		return b, nil
 	}
 
@@ -199,8 +216,10 @@ func TestEngine_UnknownCommandIsLoggedNotPanic(t *testing.T) {
 	proc := func(b app.Batch) (app.Batch, error) {
 		if !emitOrphan {
 			emitOrphan = true
+
 			return b.AppendCommand(orphan{}), nil
 		}
+
 		return b, nil
 	}
 
@@ -208,6 +227,7 @@ func TestEngine_UnknownCommandIsLoggedNotPanic(t *testing.T) {
 	defer cancel()
 
 	done := make(chan error, 1)
+
 	go func() {
 		e := &app.Engine{Connection: conn, UI: gui, Processor: proc}
 		done <- e.Run(ctx)
@@ -216,6 +236,7 @@ func TestEngine_UnknownCommandIsLoggedNotPanic(t *testing.T) {
 	// Give the engine time to process the event.
 	time.Sleep(50 * time.Millisecond)
 	cancel()
+
 	select {
 	case err := <-done:
 		require.NoError(t, err)

@@ -89,8 +89,10 @@ func TestCharMessages(t *testing.T) {
 			if tc.err != "" {
 				require.Error(t, err)
 				assert.Equal(t, tc.err, err.Error())
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.unmarshaled, tc.msg, "unmarshaling hydrates message")

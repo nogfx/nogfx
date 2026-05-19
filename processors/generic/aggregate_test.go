@@ -19,6 +19,7 @@ func feed(t *testing.T, agg app.Processor, events ...app.Event) []connection.Mes
 	t.Helper()
 
 	var out []connection.Message
+
 	for _, ev := range events {
 		got, err := agg(app.Batch{Event: ev})
 		require.NoError(t, err)
@@ -32,6 +33,7 @@ func feed(t *testing.T, agg app.Processor, events ...app.Event) []connection.Mes
 			}
 		}
 	}
+
 	return out
 }
 

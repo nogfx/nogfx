@@ -24,6 +24,7 @@ func Output() app.Processor {
 				Line: ui.Line{Raw: e.Bytes, Formatted: e.Bytes},
 			}), nil
 		}
+
 		return batch, nil
 	}
 }

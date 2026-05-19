@@ -14,6 +14,7 @@ func rowToString(row tui.Row) (str string) {
 	for _, c := range row {
 		str += string(c.Content)
 	}
+
 	return
 }
 
@@ -21,6 +22,7 @@ func rowsToStrings(rows tui.Rows) (strs []string) {
 	for _, row := range rows {
 		strs = append(strs, rowToString(row))
 	}
+
 	return
 }
 
@@ -105,8 +107,10 @@ func TestNewRow(t *testing.T) {
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
-			var row tui.Row
-			var style tcell.Style
+			var (
+				row   tui.Row
+				style tcell.Style
+			)
 
 			if tc.width > 0 {
 				if tc.cell != (tui.Cell{}) {
@@ -133,6 +137,7 @@ func TestNewRow(t *testing.T) {
 			}
 
 			assert.Equal(t, tc.row, row)
+
 			if tc.styleout != nil {
 				assert.Equal(t, *tc.styleout, style)
 			}
@@ -257,6 +262,7 @@ func TestWrap(t *testing.T) {
 			} else {
 				rows = row.Wrap(tc.width)
 			}
+
 			assert.Equal(t, tc.rows, rowsToStrings(rows))
 		})
 	}

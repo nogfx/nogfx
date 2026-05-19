@@ -56,12 +56,15 @@ func (bsh *Bashing) Processor() app.Processor {
 			if !ok {
 				continue
 			}
+
 			if simpex.Match(bashKillPattern, send.Bytes) == nil {
 				continue
 			}
+
 			if bsh.world != nil && bsh.world.Target != nil && bsh.world.Target.isPlayer {
 				continue
 			}
+
 			batch.Commands[i] = connection.Send{Bytes: bashAttack}
 			bsh.active = true
 		}
@@ -82,6 +85,7 @@ func (bsh *Bashing) Processor() app.Processor {
 		case simpex.Match(bashGoldPattern, line.Bytes) != nil:
 			batch = bsh.onGold(batch)
 		}
+
 		return batch, nil
 	}
 }
@@ -90,6 +94,7 @@ func (bsh *Bashing) onSlain(batch app.Batch) app.Batch {
 	if !bsh.active {
 		return batch
 	}
+
 	bsh.recentlySlain = true
 	if bsh.world != nil && bsh.world.Target != nil && bsh.world.Target.Queue() > 0 {
 		return batch
@@ -100,6 +105,7 @@ func (bsh *Bashing) onSlain(batch app.Batch) app.Batch {
 	bsh.attacking = false
 	batch = dropMatching(batch, bashAttack)
 	batch = batch.AppendCommand(connection.Send{Bytes: bashClearEqbal})
+
 	return batch
 }
 
@@ -110,6 +116,7 @@ func (bsh *Bashing) onAttack(batch app.Batch) app.Batch {
 		bsh.active = true
 		batch = dropMatching(batch, bashClearEqbal)
 	}
+
 	bsh.recentlySlain = false
 
 	if !bsh.active {
@@ -122,6 +129,7 @@ func (bsh *Bashing) onAttack(batch app.Batch) app.Batch {
 
 	batch = batch.AppendCommand(connection.Send{Bytes: bashAttack})
 	bsh.attacking = true
+
 	return batch
 }
 
@@ -129,8 +137,10 @@ func (bsh *Bashing) onGold(batch app.Batch) app.Batch {
 	if !bsh.recentlySlain {
 		return batch
 	}
+
 	batch = batch.AppendCommand(connection.Send{Bytes: []byte("get sovereigns")})
 	batch = batch.AppendCommand(connection.Send{Bytes: []byte("put sovereigns in pack")})
+
 	return batch
 }
 
@@ -141,9 +151,12 @@ func dropMatching(batch app.Batch, data []byte) app.Batch {
 		if s, ok := c.(connection.Send); ok && bytesEqual(s.Bytes, data) {
 			continue
 		}
+
 		out = append(out, c)
 	}
+
 	batch.Commands = out
+
 	return batch
 }
 
@@ -151,10 +164,12 @@ func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
 	}
+
 	return true
 }

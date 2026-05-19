@@ -51,9 +51,11 @@ func (tv *TunnelVision) rewriteProcessor() app.Processor {
 			return tv.handleTextLine(batch, ev), nil
 		case connection.Prompt:
 			tv.expectCured = false
+
 			return tv.flushInto(batch), nil
 		default:
 			tv.expectCured = false
+
 			return batch, nil
 		}
 	}
@@ -68,13 +70,16 @@ func (tv *TunnelVision) handleTextLine(batch app.Batch, line connection.TextLine
 		if c.kind == tvAttack && tv.attackTarget == "" {
 			tv.attackTarget = c.detail
 		}
+
 		if c.kind == tvAttack {
 			tv.attackParts = append(tv.attackParts, "\x1b[32;1m"+c.style+"\x1b[0m")
 		} else {
 			tv.attackParts = append(tv.attackParts, c.detail)
 		}
+
 		tv.expectCured = false
 		batch.Event = nil
+
 		return batch
 	}
 
@@ -83,8 +88,10 @@ func (tv *TunnelVision) handleTextLine(batch app.Batch, line connection.TextLine
 
 	if tv.expectCured {
 		tv.expectCured = false
+
 		if c.kind == tvCured {
 			batch.Event = nil
+
 			return batch
 		}
 	}
@@ -101,6 +108,7 @@ func (tv *TunnelVision) handleTextLine(batch app.Batch, line connection.TextLine
 	case tvAttack, tvAttackModifier:
 		// Unreachable: attack kinds returned above.
 	}
+
 	return batch
 }
 
@@ -114,10 +122,12 @@ func (tv *TunnelVision) flushInto(batch app.Batch) app.Batch {
 
 	var b strings.Builder
 	b.WriteString("You \x1b[32;1mattack\x1b[0m")
+
 	if tv.attackTarget != "" {
 		b.WriteByte(' ')
 		b.WriteString(tv.attackTarget)
 	}
+
 	b.WriteString(" / ")
 	b.WriteString(strings.Join(tv.attackParts, " "))
 	b.WriteByte('.')
@@ -126,6 +136,7 @@ func (tv *TunnelVision) flushInto(batch app.Batch) app.Batch {
 	tv.attackParts = nil
 
 	bs := []byte(b.String())
+
 	return batch.AppendCommand(ui.PrintLine{
 		Line: ui.Line{Raw: bs, Formatted: bs},
 	})
@@ -244,16 +255,19 @@ func classifyTunnelVision(text []byte, _ *Character) tvClass {
 			return tvClass{kind: tvOmit}
 		}
 	}
+
 	for _, p := range tvCuringPatterns {
 		if simpex.Match(p, text) != nil {
 			return tvClass{kind: tvCuring}
 		}
 	}
+
 	for _, p := range tvCuredPatterns {
 		if simpex.Match(p, text) != nil {
 			return tvClass{kind: tvCured}
 		}
 	}
+
 	for name, pattern := range tvAttacks {
 		caps := simpex.Match([]byte(pattern), text)
 		if caps != nil {
@@ -261,13 +275,16 @@ func classifyTunnelVision(text []byte, _ *Character) tvClass {
 			if len(caps) > 0 {
 				target = string(caps[0])
 			}
+
 			return tvClass{kind: tvAttack, style: name, detail: target}
 		}
 	}
+
 	for pattern, label := range tvModifiers {
 		if simpex.Match([]byte(pattern), text) != nil {
 			return tvClass{kind: tvAttackModifier, detail: label}
 		}
 	}
+
 	return tvClass{kind: tvNone}
 }

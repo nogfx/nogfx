@@ -20,18 +20,21 @@ func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
 	// behind a Scan that's blocked waiting for text after a pure-IAC
 	// burst.
 	nvt.events = events
+
 	defer func() { nvt.events = nil }()
 
 	// Drain anything Read queued before Run started.
 	for _, ev := range nvt.pendingEvents {
 		events <- ev
 	}
+
 	nvt.pendingEvents = nil
 
 	scanner := bufio.NewScanner(nvt)
 	scanner.Split(nvt.SplitFunc)
 
 	var pending [][]byte
+
 	for scanner.Scan() {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -47,6 +50,7 @@ func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
 			if len(tok) > 0 {
 				pending = append(pending, tok)
 			}
+
 			continue
 		}
 
@@ -75,13 +79,17 @@ func (nvt *NVT) Run(ctx context.Context, events chan<- app.Event) error {
 	if err := scanner.Err(); err != nil {
 		if errors.Is(err, io.EOF) {
 			events <- connection.StateChanged{Connected: false}
+
 			return nil
 		}
+
 		events <- connection.StateChanged{Connected: false, Err: err}
+
 		return err
 	}
 
 	events <- connection.StateChanged{Connected: false}
+
 	return nil
 }
 
@@ -94,6 +102,7 @@ func splitCRLF(data []byte) [][]byte {
 	if len(parts) > 1 && len(parts[len(parts)-1]) == 0 {
 		parts = parts[:len(parts)-1]
 	}
+
 	return parts
 }
 
@@ -103,6 +112,7 @@ func (nvt *NVT) Apply(cmd app.Command) error {
 	switch c := cmd.(type) {
 	case connection.Send:
 		_, err := nvt.Write(c.Bytes)
+
 		return err
 
 	case connection.SendGMCP:
@@ -111,6 +121,7 @@ func (nvt *NVT) Apply(cmd app.Command) error {
 		frame = append(frame, c.Payload...)
 		frame = append(frame, IAC, SE)
 		_, err := nvt.Write(frame)
+
 		return err
 
 	case connection.Reconnect, connection.Disconnect:
@@ -118,7 +129,9 @@ func (nvt *NVT) Apply(cmd app.Command) error {
 		// these as routing failures; the actual transport-control wiring
 		// arrives in a follow-up.
 		_ = c
+
 		return nil
 	}
+
 	return app.ErrCommandNotApplicable
 }

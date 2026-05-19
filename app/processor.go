@@ -15,12 +15,15 @@ func Chain(processors ...Processor) Processor {
 			if proc == nil {
 				continue
 			}
+
 			next, err := proc(b)
 			if err != nil {
 				return b, fmt.Errorf("processor %d: %w", i, err)
 			}
+
 			b = next
 		}
+
 		return b, nil
 	}
 }

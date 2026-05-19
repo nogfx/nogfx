@@ -23,18 +23,24 @@ func SplitInputProcessor(sep []byte) Processor {
 			send, ok := cmd.(connection.Send)
 			if !ok {
 				out = append(out, cmd)
+
 				continue
 			}
+
 			parts := bytes.Split(send.Bytes, sep)
 			if len(parts) == 1 {
 				out = append(out, cmd)
+
 				continue
 			}
+
 			for _, part := range parts {
 				out = append(out, connection.Send{Bytes: bytes.TrimSpace(part)})
 			}
 		}
+
 		batch.Commands = out
+
 		return batch, nil
 	}
 }

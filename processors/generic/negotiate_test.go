@@ -15,14 +15,18 @@ import (
 // processor appended, or nil if no command was emitted.
 func runNeg(t *testing.T, proc app.Processor, ev app.Event) []byte {
 	t.Helper()
+
 	got, err := proc(app.Batch{Event: ev})
 	require.NoError(t, err)
+
 	if len(got.Commands) == 0 {
 		return nil
 	}
+
 	require.Len(t, got.Commands, 1)
 	send, ok := got.Commands[0].(connection.Send)
 	require.True(t, ok)
+
 	return send.Bytes
 }
 

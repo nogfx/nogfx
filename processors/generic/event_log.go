@@ -41,6 +41,7 @@ func EventLogProcessor(dir, filename string) (Processor, error) {
 		ts := time.Now().Format("15:04:05.000")
 
 		var line string
+
 		switch e := batch.Event.(type) {
 		case connection.TextLine:
 			line = fmt.Sprintf("%s TXT %s\n", ts, sanitize(e.Bytes))
@@ -68,6 +69,7 @@ func EventLogProcessor(dir, filename string) (Processor, error) {
 		if _, err := file.WriteString(line); err != nil {
 			return batch, fmt.Errorf("failed to write event log: %w", err)
 		}
+
 		return batch, nil
 	}, nil
 }
@@ -87,9 +89,12 @@ func sanitize(payload []byte) string {
 			for j < len(payload) && payload[j] != 'm' {
 				j++
 			}
+
 			i = j
+
 			continue
 		}
+
 		switch c {
 		case '\n':
 			out = append(out, '\\', 'n')
@@ -105,6 +110,7 @@ func sanitize(payload []byte) string {
 	if len(out) > maxLen {
 		return string(out[:maxLen]) + "…"
 	}
+
 	return string(out)
 }
 
@@ -115,5 +121,6 @@ func gmcpHead(payload []byte) []byte {
 	if i := bytes.IndexAny(payload, " \t"); i > 0 {
 		return payload[:i]
 	}
+
 	return payload
 }

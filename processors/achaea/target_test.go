@@ -321,6 +321,7 @@ func TestWorldTargeting(t *testing.T) {
 			for _, b := range target.DrainSends() {
 				sent = append(sent, string(b))
 			}
+
 			assert.Equal(t, tc.sent, sent)
 		})
 	}

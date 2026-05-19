@@ -52,10 +52,12 @@ func (tgt *Target) SetTargetCommand() ui.SetTarget {
 	if tgt.Name == "" {
 		return ui.SetTarget{Target: nil}
 	}
+
 	queue := tgt.Queue() - 1
 	if queue < 0 {
 		queue = 0
 	}
+
 	return ui.SetTarget{Target: &ui.Target{
 		Name:   tgt.Name,
 		Health: tgt.Health,
@@ -68,6 +70,7 @@ func (tgt *Target) SetTargetCommand() ui.SetTarget {
 func (tgt *Target) DrainSends() [][]byte {
 	sends := tgt.pendingSends
 	tgt.pendingSends = nil
+
 	return sends
 }
 
@@ -83,6 +86,7 @@ func (tgt *Target) queueSet(name string) {
 	if name == tgt.Name {
 		return
 	}
+
 	if tgt.isPlayer {
 		return
 	}
@@ -97,6 +101,7 @@ func (tgt *Target) queueSet(name string) {
 	if n := len(tgt.pendingSends); n > 0 && bytes.Equal(tgt.pendingSends[n-1], cmd) {
 		return
 	}
+
 	tgt.pendingSends = append(tgt.pendingSends, cmd)
 }
 
@@ -112,6 +117,7 @@ func (tgt *Target) SetCandidates(names []string) {
 
 	if wasCandidate && !stillCandidate {
 		tgt.queueSet("")
+
 		return
 	}
 
@@ -145,18 +151,23 @@ func (tgt *Target) RemovePresent(name string) {
 // the current one.
 func (tgt *Target) Queue() int {
 	queue := 0
+
 	for _, present := range tgt.present {
 		if tgt.Name != "" && strings.Contains(present, tgt.Name) {
 			queue++
+
 			continue
 		}
+
 		for _, candidate := range tgt.candidates {
 			if strings.Contains(present, candidate) {
 				queue++
+
 				break
 			}
 		}
 	}
+
 	return queue
 }
 
@@ -174,6 +185,7 @@ outer:
 		for _, present := range tgt.present {
 			if strings.Contains(present, candidate) {
 				newTarget = candidate
+
 				break outer
 			}
 		}
@@ -198,6 +210,7 @@ func (tgt *Target) FromRoomInfo(msg *gmcp.RoomInfo) {
 	if tgt.area != nil && room.Area.ID == tgt.area.ID {
 		return
 	}
+
 	tgt.area = room.Area
 
 	npcs := tgt.npcs()[room.Area.ID]
@@ -214,6 +227,7 @@ func (tgt *Target) FromCharItemsList(msg *gmcp.CharItemsList) {
 	for _, item := range msg.Items {
 		present = append(present, item.Name)
 	}
+
 	tgt.SetPresent(present)
 }
 

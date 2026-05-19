@@ -61,6 +61,7 @@ func (output *Output) appendLine(line ui.Line) uint64 {
 			row, _ := NewRowFromBytes(line.Formatted, output.style)
 			output.buffer[idx] = row
 			output.lines[idx] = line
+
 			return line.ID
 		}
 	}
@@ -85,6 +86,7 @@ func (output *Output) appendLine(line ui.Line) uint64 {
 	for id := range output.byID {
 		output.byID[id]++
 	}
+
 	output.byID[line.ID] = 0
 
 	if output.offset > 0 && output.pwidth > 0 {
@@ -96,6 +98,7 @@ func (output *Output) appendLine(line ui.Line) uint64 {
 		for _, l := range dropped {
 			delete(output.byID, l.ID)
 		}
+
 		output.buffer = output.buffer[0:scrollbackLimit]
 		output.lines = output.lines[0:scrollbackLimit]
 	}
@@ -114,6 +117,7 @@ func (output *Output) Lines() []ui.Line {
 	for i := range output.lines {
 		out[len(output.lines)-1-i] = output.lines[i]
 	}
+
 	return out
 }
 
@@ -146,6 +150,7 @@ func RenderOutput(output *Output, width, height int) Rows {
 	if output.pwidth > 0 && output.pwidth != width {
 		output.offset = 0
 	}
+
 	output.pwidth = width
 
 	// Make sure to render enough for a history scrollback split.
@@ -173,6 +178,7 @@ func RenderOutput(output *Output, width, height int) Rows {
 	if height <= 2 || length <= height || output.offset == 0 {
 		rows = rows[max(0, length-height):]
 		rows = append(NewRows(width, height-length, padding), rows...)
+
 		return rows
 	}
 

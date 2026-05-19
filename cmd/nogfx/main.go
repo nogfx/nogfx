@@ -37,15 +37,18 @@ func realMain() error {
 	flags := flag.NewFlagSet("nogfx", flag.ContinueOnError)
 	headlessMode := flags.Bool("headless", false,
 		"run without the TUI; read commands from stdin and write game output to stdout")
+
 	flags.Usage = func() {
 		if _, err := fmt.Fprintln(flags.Output(), "usage: nogfx [--headless] example.com:23"); err != nil {
 			log.Printf("usage: %v", err)
 		}
+
 		flags.PrintDefaults()
 	}
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
+
 	args := flags.Args()
 	if len(args) < 1 {
 		return errors.New("usage: nogfx [--headless] example.com:23")
@@ -58,11 +61,13 @@ func realMain() error {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		if cerr := f.Close(); cerr != nil {
 			log.Printf("close error log: %v", cerr)
 		}
 	}()
+
 	log.SetOutput(f)
 
 	address, err := parseAddress(args[0])
@@ -198,6 +203,7 @@ func buildChain(address string, headlessMode bool) (app.Processor, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create event log processor: %w", err)
 		}
+
 		preWorld = append([]app.Processor{eventLog}, preWorld...)
 	}
 
@@ -207,6 +213,7 @@ func buildChain(address string, headlessMode bool) (app.Processor, error) {
 	}
 
 	var worldProcs []app.Processor
+
 	switch address {
 	case "achaea.com:23", "50.31.100.8:23":
 		worldProcs = append(worldProcs, achaea.New().Processors()...)

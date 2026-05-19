@@ -66,6 +66,7 @@ func (msg *CharDefencesRemove) Marshal() string {
 	}
 
 	data, _ := json.Marshal(list)
+
 	return fmt.Sprintf("%s %s", msg.ID(), string(data))
 }
 

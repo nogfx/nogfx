@@ -40,6 +40,7 @@ func (engine *Engine) Run(pctx context.Context) error {
 		if err := engine.Connection.Run(ctx, endpointEvents); err != nil {
 			errs <- err
 		}
+
 		cancel()
 	}()
 
@@ -47,6 +48,7 @@ func (engine *Engine) Run(pctx context.Context) error {
 		if err := engine.UI.Run(ctx, endpointEvents); err != nil {
 			errs <- err
 		}
+
 		cancel()
 	}()
 
@@ -80,8 +82,10 @@ func (engine *Engine) Run(pctx context.Context) error {
 			next, err := engine.Processor(batch)
 			if err != nil {
 				log.Printf("processor chain: %v", err)
+
 				continue
 			}
+
 			batch = next
 		}
 
@@ -93,10 +97,13 @@ func (engine *Engine) Run(pctx context.Context) error {
 			for _, cmd := range batch.Commands {
 				if guarded.Forbids(cmd) {
 					log.Printf("dropping forbidden command %T in batch triggered by %T", cmd, batch.Event)
+
 					continue
 				}
+
 				filtered = append(filtered, cmd)
 			}
+
 			batch.Commands = filtered
 		}
 
@@ -117,14 +124,18 @@ func (engine *Engine) dispatch(commands []Command) {
 			continue
 		} else if !errors.Is(err, ErrCommandNotApplicable) {
 			log.Printf("connection apply (%T): %v", cmd, err)
+
 			continue
 		}
+
 		if err := engine.UI.Apply(cmd); err == nil {
 			continue
 		} else if !errors.Is(err, ErrCommandNotApplicable) {
 			log.Printf("ui apply (%T): %v", cmd, err)
+
 			continue
 		}
+
 		log.Printf("unhandled command: %T", cmd)
 	}
 }

@@ -20,6 +20,7 @@ func Input() app.Processor {
 		if !ok {
 			return batch, nil
 		}
+
 		return batch.AppendCommand(connection.Send{Bytes: inp.Bytes}), nil
 	}
 }

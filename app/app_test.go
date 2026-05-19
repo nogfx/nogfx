@@ -65,6 +65,7 @@ func TestChain_SkipsNilProcessors(t *testing.T) {
 	called := false
 	mark := func(b app.Batch) (app.Batch, error) {
 		called = true
+
 		return b, nil
 	}
 
@@ -92,10 +93,12 @@ func TestChain_StopsOnError(t *testing.T) {
 
 	count := func(b app.Batch) (app.Batch, error) {
 		calls++
+
 		return b, nil
 	}
 	fail := func(b app.Batch) (app.Batch, error) {
 		calls++
+
 		return b, boom
 	}
 

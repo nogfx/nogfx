@@ -83,11 +83,14 @@ func TestRepeatInputProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			var got [][]byte
+
 			for _, cmd := range out.Commands {
 				send, ok := cmd.(connection.Send)
 				require.True(t, ok, "command should be a connection.Send, got %T", cmd)
+
 				got = append(got, send.Bytes)
 			}
+
 			assert.Equal(t, tc.output, got)
 		})
 	}

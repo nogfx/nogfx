@@ -52,6 +52,7 @@ func NewWithIO(in io.Reader, out io.Writer) *Headless {
 func (h *Headless) Run(ctx context.Context, events chan<- app.Event) error {
 	if h.in == nil {
 		<-ctx.Done()
+
 		return nil
 	}
 
@@ -63,8 +64,10 @@ func (h *Headless) Run(ctx context.Context, events chan<- app.Event) error {
 
 	go func() {
 		defer close(lines)
+
 		scanner := bufio.NewScanner(h.in)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
 		for scanner.Scan() {
 			b := append([]byte(nil), scanner.Bytes()...)
 			select {
@@ -73,6 +76,7 @@ func (h *Headless) Run(ctx context.Context, events chan<- app.Event) error {
 				return
 			}
 		}
+
 		errs <- scanner.Err()
 	}()
 
@@ -89,8 +93,10 @@ func (h *Headless) Run(ctx context.Context, events chan<- app.Event) error {
 					}
 				default:
 				}
+
 				return nil
 			}
+
 			select {
 			case events <- ui.Input{Bytes: b}:
 			case <-ctx.Done():
@@ -110,9 +116,12 @@ func (h *Headless) Apply(cmd app.Command) error {
 		if h.out == nil {
 			return nil
 		}
+
 		h.writeMu.Lock()
 		defer h.writeMu.Unlock()
+
 		_, err := fmt.Fprintln(h.out, string(c.Line.Formatted))
+
 		return err
 
 	case ui.ReFormat,

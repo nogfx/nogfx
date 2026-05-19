@@ -23,6 +23,7 @@ var _ bufio.SplitFunc = (&telnet.NVT{}).SplitFunc
 // to arrange it explicitly.
 func enableSuppressGoAhead(t *testing.T, c *telnet.NVT) {
 	t.Helper()
+
 	_, err := c.Write([]byte{telnet.IAC, telnet.Do, telnet.SuppressGoAhead})
 	require.NoError(t, err)
 }
@@ -131,6 +132,7 @@ func TestSplitFunc(t *testing.T) {
 			if tc.conn == nil {
 				conn = NewMockConn(tc.output)
 			}
+
 			client := telnet.NewNVT(conn)
 
 			if tc.enableSGA {
@@ -146,6 +148,7 @@ func TestSplitFunc(t *testing.T) {
 			}
 
 			var scanned [][]byte
+
 			for i := 0; i < iterations; i++ {
 				scanner.Scan()
 				scanned = append(scanned, scanner.Bytes())
@@ -266,10 +269,12 @@ func TestRead(t *testing.T) {
 			}
 
 			serverRead := []byte{}
+
 			for i := 0; i < iterations; i++ {
 				buffer := make([]byte, bufferLength)
 				count, err := client.Read(buffer)
 				require.True(t, err == nil || errors.Is(err, io.EOF), err)
+
 				serverRead = append(serverRead, buffer[:count]...)
 			}
 

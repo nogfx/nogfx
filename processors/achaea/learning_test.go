@@ -25,11 +25,13 @@ func line(s string) connection.TextLine {
 // sendStrings extracts the bytes of every connection.Send command.
 func sendStrings(b app.Batch) []string {
 	var out []string
+
 	for _, c := range b.Commands {
 		if s, ok := c.(connection.Send); ok {
 			out = append(out, string(s.Bytes))
 		}
 	}
+
 	return out
 }
 
@@ -41,6 +43,7 @@ func textLines(b app.Batch) []string {
 	if !ok {
 		return nil
 	}
+
 	return []string{string(tl.Bytes)}
 }
 

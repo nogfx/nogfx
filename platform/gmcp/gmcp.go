@@ -74,6 +74,7 @@ func Parse(data []byte) (Message, error) {
 	if _, ok := messages[parts[0]]; !ok {
 		return nil, fmt.Errorf("%w '%s'", ErrUnknownMessage, parts[0])
 	}
+
 	msg := messages[parts[0]]()
 
 	if err := msg.Unmarshal(data); err != nil {
@@ -86,6 +87,7 @@ func Parse(data []byte) (Message, error) {
 // Marshal converts a Message to JSON data.
 func Marshal(msg Message) string {
 	data, _ := json.Marshal(msg)
+
 	return fmt.Sprintf("%s %s", msg.ID(), string(data))
 }
 

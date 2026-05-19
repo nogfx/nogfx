@@ -13,6 +13,7 @@ func TestRenderOutput(t *testing.T) {
 		for _, c := range row {
 			str += string(c.Content)
 		}
+
 		return
 	}
 
@@ -20,6 +21,7 @@ func TestRenderOutput(t *testing.T) {
 		for _, row := range rows {
 			strs = append(strs, rowToString(row))
 		}
+
 		return
 	}
 

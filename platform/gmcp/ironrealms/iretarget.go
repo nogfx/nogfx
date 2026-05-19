@@ -62,6 +62,7 @@ func (msg *IRETargetInfo) Marshal() string {
 	}
 
 	data, _ := json.Marshal(proxy)
+
 	return "IRE.Target.Info " + string(data)
 }
 

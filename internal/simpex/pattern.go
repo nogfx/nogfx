@@ -6,6 +6,8 @@ import (
 
 // Match a text against a pattern to see if it matches. If it does, captured
 // matches are returned. If it doesn't, nil is returned.
+//
+//nolint:gocyclo // single-pass state machine over pattern tokens; splitting cases would hurt readability since they share mutable state.
 func Match(pattern, text []byte) [][]byte {
 	captures := [][]byte{}
 
@@ -31,7 +33,9 @@ func Match(pattern, text []byte) [][]byte {
 				}
 
 				pattern = pattern[1:]
+
 				tick()
+
 				continue
 			}
 
@@ -45,7 +49,9 @@ func Match(pattern, text []byte) [][]byte {
 				}
 
 				pattern = pattern[1:]
+
 				tick()
+
 				continue
 			}
 
@@ -60,7 +66,9 @@ func Match(pattern, text []byte) [][]byte {
 				}
 
 				pattern = pattern[1:]
+
 				tick()
+
 				continue
 			}
 
@@ -85,7 +93,9 @@ func Match(pattern, text []byte) [][]byte {
 				}
 
 				pattern = pattern[1:]
+
 				tick()
+
 				continue
 			}
 
@@ -132,11 +142,14 @@ func Match(pattern, text []byte) [][]byte {
 				}
 
 				pattern = pattern[1:]
+
 				tick()
+
 				continue
 			}
 
 			pattern[0] = text[0]
+
 			tick()
 
 		default:
@@ -175,6 +188,7 @@ func isnotspecial(r rune) bool {
 
 func isnot(b byte) func(r rune) bool {
 	r := rune(b)
+
 	return func(rr rune) bool {
 		return r != rr
 	}

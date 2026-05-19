@@ -36,6 +36,7 @@ func loadCredentials(dir, host string) (map[string]string, error) {
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("stat credentials %q: %w", path, err)
 	}
@@ -51,6 +52,7 @@ func loadCredentials(dir, host string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open credentials %q: %w", path, err)
 	}
+
 	defer func() {
 		if cerr := f.Close(); cerr != nil {
 			log.Printf("close credentials %q: %v", path, cerr)
@@ -58,25 +60,32 @@ func loadCredentials(dir, host string) (map[string]string, error) {
 	}()
 
 	creds := map[string]string{}
+
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
+
 		eq := strings.IndexByte(line, '=')
 		if eq < 0 {
 			return nil, fmt.Errorf("credentials %q: malformed line %q (missing =)", path, line)
 		}
+
 		key := strings.TrimSpace(line[:eq])
+
 		val := strings.TrimSpace(line[eq+1:])
 		if key == "" {
 			return nil, fmt.Errorf("credentials %q: empty key in line %q", path, line)
 		}
+
 		creds[key] = val
 	}
+
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("read credentials %q: %w", path, err)
 	}
+
 	return creds, nil
 }

@@ -34,13 +34,16 @@ func Decode() app.Processor {
 		if !ok {
 			return batch, nil
 		}
+
 		msg, err := gmcp.Parse(frame.Payload)
 		if err != nil {
 			if !errors.Is(err, gmcp.ErrUnknownMessage) {
 				log.Printf("decode GMCP: %s", err)
 			}
+
 			return batch, nil
 		}
+
 		return batch.AppendEvent(DecodedGMCP{Message: msg}), nil
 	}
 }

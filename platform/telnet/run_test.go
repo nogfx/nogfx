@@ -23,10 +23,12 @@ func collect(t *testing.T, serverOutput []byte) []app.Event {
 	client := telnet.NewNVT(conn)
 
 	events := make(chan app.Event, 32)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	done := make(chan error, 1)
+
 	go func() { done <- client.Run(ctx, events) }()
 
 	// Wait for Run to finish (mock conn EOFs once bytes are consumed).
@@ -35,12 +37,14 @@ func collect(t *testing.T, serverOutput []byte) []app.Event {
 	case <-ctx.Done():
 		t.Fatal("Run did not return in time")
 	}
+
 	close(events)
 
 	var got []app.Event
 	for ev := range events {
 		got = append(got, ev)
 	}
+
 	return got
 }
 
@@ -48,8 +52,11 @@ func TestRun_GAOnlyBecomesPrompt(t *testing.T) {
 	got := collect(t, []byte{'h', ':', '1', telnet.IAC, telnet.GA})
 
 	// Filter to just text/prompt events for clarity.
-	var prompts []connection.Prompt
-	var lines []connection.TextLine
+	var (
+		prompts []connection.Prompt
+		lines   []connection.TextLine
+	)
+
 	for _, ev := range got {
 		switch e := ev.(type) {
 		case connection.Prompt:
@@ -72,8 +79,11 @@ func TestRun_MultiLinePromptSplitsOnCRLF(t *testing.T) {
 			"\xff\xf9", // IAC GA
 	))
 
-	var prompts []connection.Prompt
-	var lines []connection.TextLine
+	var (
+		prompts []connection.Prompt
+		lines   []connection.TextLine
+	)
+
 	for _, ev := range got {
 		switch e := ev.(type) {
 		case connection.Prompt:
@@ -97,8 +107,11 @@ func TestRun_DoubledCRLFAtStart(t *testing.T) {
 	// the visible scrollback.
 	got := collect(t, []byte("\r\nfirst\r\n\r\nh:1 -\xff\xf9"))
 
-	var prompts []connection.Prompt
-	var lines []connection.TextLine
+	var (
+		prompts []connection.Prompt
+		lines   []connection.TextLine
+	)
+
 	for _, ev := range got {
 		switch e := ev.(type) {
 		case connection.Prompt:

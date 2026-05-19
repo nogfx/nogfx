@@ -78,6 +78,7 @@ func (tui *TUI) RenderVitals(width int) Rows {
 
 	tui.vitalsMu.Lock()
 	order := tui.collectVitalsOrder()
+
 	values := make([]*vital, 0, len(order))
 	for _, name := range order {
 		values = append(values, tui.lookupVital(name))
@@ -91,6 +92,7 @@ func (tui *TUI) RenderVitals(width int) Rows {
 	gapStyle := (tcell.Style{}).Background(tcell.Color235)
 
 	row := Row{}
+
 	for i, name := range order {
 		styles, ok := vitalStyles[name]
 		if !ok {
@@ -119,10 +121,13 @@ func (tui *TUI) collectVitalsOrder() []string {
 	if tui.health != nil {
 		order = append(order, "health")
 	}
+
 	if tui.mana != nil {
 		order = append(order, "mana")
 	}
+
 	order = append(order, tui.vitalsOrder...)
+
 	return order
 }
 
@@ -143,6 +148,7 @@ func (tui *TUI) lookupVital(name string) *vital {
 func RenderVital(v *vital, width int, styles []tcell.Style) Row {
 	if v == nil || v.Max == 0 {
 		empty := NewRow(width, NewCell(' ', styles[1]))
+
 		return empty
 	}
 

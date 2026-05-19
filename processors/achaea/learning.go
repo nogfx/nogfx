@@ -63,10 +63,12 @@ func (lrn *Learning) Processor() app.Processor {
 			if !ok {
 				continue
 			}
+
 			caps := simpex.Match(learnInputPattern, send.Bytes)
 			if caps == nil {
 				continue
 			}
+
 			n, err := strconv.Atoi(string(caps[0]))
 			if err != nil || n <= maxLessons {
 				continue
@@ -100,24 +102,29 @@ func (lrn *Learning) Processor() app.Processor {
 			} else {
 				batch.Event = nil
 			}
+
 			lrn.armTimer()
 
 		case simpex.Match(lessonContinuePattern, line.Bytes) != nil:
 			// Drop the noisy "continues your training" line.
 			batch.Event = nil
+
 			lrn.armTimer()
 
 		case matchesAny(lessonFinishPatterns, line.Bytes):
 			if lrn.remaining <= 0 {
 				batch.Event = connection.TextLine{Bytes: lrn.completionLine()}
 				lrn.reset()
+
 				return batch, nil
 			}
+
 			batch = batch.AppendCommand(connection.Send{Bytes: lrn.nextChunk()})
 			batch.Event = connection.TextLine{Bytes: lrn.progressLine()}
 			lrn.start = time.Now()
 			lrn.armTimer()
 		}
+
 		return batch, nil
 	}
 }
@@ -129,7 +136,9 @@ func (lrn *Learning) nextChunk() []byte {
 	if lrn.remaining < count {
 		count = lrn.remaining
 	}
+
 	lrn.remaining -= count
+
 	return []byte(fmt.Sprintf("learn %d %s", count, lrn.target))
 }
 
@@ -146,6 +155,7 @@ func (lrn *Learning) progressLine() []byte {
 		timeleft += fmt.Sprintf("%.0f minutes ", mins)
 		estimate -= time.Duration(mins) * time.Minute
 	}
+
 	timeleft += fmt.Sprintf("%.0f seconds", estimate.Seconds())
 
 	return []byte(fmt.Sprintf("%d of %d lessons learned, %s remaining.",
@@ -161,6 +171,7 @@ func (lrn *Learning) armTimer() {
 	if lrn.timer != nil {
 		lrn.timer.Stop()
 	}
+
 	lrn.timer = time.AfterFunc(learnTimeout, lrn.reset)
 }
 
@@ -168,6 +179,7 @@ func (lrn *Learning) reset() {
 	if lrn.timer != nil {
 		lrn.timer.Stop()
 	}
+
 	lrn.total = 0
 	lrn.remaining = 0
 	lrn.target = nil
@@ -181,5 +193,6 @@ func matchesAny(patterns [][]byte, text []byte) bool {
 			return true
 		}
 	}
+
 	return false
 }

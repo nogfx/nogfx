@@ -47,8 +47,10 @@ func LookupOrCreateRoom(id int) (*Room, bool) {
 	if r, ok := rooms[id]; ok {
 		return r, true
 	}
+
 	r := &Room{ID: id}
 	rooms[id] = r
+
 	return r, false
 }
 
@@ -58,11 +60,14 @@ func LookupOrCreateArea(id int, name string) *Area {
 	if id == 0 {
 		return nil
 	}
+
 	if a, ok := areas[id]; ok {
 		return a
 	}
+
 	a := &Area{ID: id, Name: name}
 	areas[id] = a
+
 	return a
 }
 
@@ -138,12 +143,14 @@ func (room *Room) Displacement(direction string) (int, int) {
 		if !room.HasAnyExits("w", "n sw", "s nw") {
 			return -1, 0
 		}
+
 		return 0, 0
 
 	case "in":
 		if !room.HasAnyExits("e", "n se", "s ne") {
 			return 1, 0
 		}
+
 		return 0, 0
 	}
 

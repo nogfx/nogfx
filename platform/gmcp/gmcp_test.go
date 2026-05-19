@@ -13,6 +13,7 @@ import (
 
 func makeGMCP(id string, data interface{}) string {
 	jsondata, _ := json.Marshal(data)
+
 	return fmt.Sprintf("%s %s", id, string(jsondata))
 }
 
@@ -221,11 +222,14 @@ func TestParse(t *testing.T) {
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
-			var msgs []gmcp.Message
-			var errs []string
+			var (
+				msgs []gmcp.Message
+				errs []string
+			)
 
 			for _, data := range tc.datas {
 				msg, err := gmcp.Parse([]byte(data))
+
 				msgs = append(msgs, msg)
 				if err != nil {
 					errs = append(errs, err.Error())
@@ -236,9 +240,11 @@ func TestParse(t *testing.T) {
 				if assert.NotNil(t, errs) {
 					assert.Equal(t, tc.errs, errs)
 				}
+
 				return
 			} else if errs != nil {
 				assert.Nil(t, errs)
+
 				return
 			}
 

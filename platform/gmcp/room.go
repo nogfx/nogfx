@@ -107,6 +107,7 @@ func (msg *RoomInfo) Marshal() string {
 	}
 
 	data, _ := json.Marshal(proxy)
+
 	return fmt.Sprintf("%s %s", msg.ID(), string(data))
 }
 
@@ -138,6 +139,7 @@ func (msg *RoomInfo) Unmarshal(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("failed parsing building from coords: %w", err)
 		}
+
 		msg.Building = building
 
 		fallthrough
@@ -147,12 +149,14 @@ func (msg *RoomInfo) Unmarshal(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("failed parsing x from coords: %w", err)
 		}
+
 		msg.X = x
 
 		y, err := strconv.Atoi(coords[2])
 		if err != nil {
 			return fmt.Errorf("failed parsing y from coords: %w", err)
 		}
+
 		msg.Y = y
 
 		fallthrough
@@ -162,6 +166,7 @@ func (msg *RoomInfo) Unmarshal(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("failed parsing area number from coords: %w", err)
 		}
+
 		msg.AreaNumber = areaNumber
 
 	default:

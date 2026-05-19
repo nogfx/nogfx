@@ -87,6 +87,7 @@ func (tui *TUI) setCache(name string, rows Rows) {
 
 	if rows == nil {
 		delete(tui.panesCache, name)
+
 		return
 	}
 
@@ -119,6 +120,7 @@ func (tui *TUI) Run(pctx context.Context, events chan<- app.Event) error {
 	tui.events = events
 
 	tui.running = true
+
 	defer func() { tui.running = false }()
 
 	if err := tui.screen.Init(); err != nil {
@@ -162,6 +164,7 @@ func (tui *TUI) pollEvents(ctx context.Context, cancel func()) {
 		case *tcell.EventKey:
 			if isNumpad(ev) {
 				numpad = true
+
 				continue
 			} else if numpad {
 				numpad = false
@@ -170,6 +173,7 @@ func (tui *TUI) pollEvents(ctx context.Context, cancel func()) {
 
 			if ev.Key() == tcell.KeyCtrlD {
 				cancel()
+
 				return
 			}
 
@@ -189,6 +193,7 @@ func (tui *TUI) emitEvent(ev app.Event) {
 	if tui.events == nil {
 		return
 	}
+
 	tui.events <- ev
 }
 
@@ -248,6 +253,7 @@ func (tui *TUI) Apply(cmd app.Command) error {
 		if _, ok := tui.vitalsByName[c.Name]; !ok {
 			tui.vitalsOrder = append(tui.vitalsOrder, c.Name)
 		}
+
 		tui.vitalsByName[c.Name] = &vital{Value: c.Value, Max: c.Max}
 		tui.vitalsMu.Unlock()
 		tui.setCache(paneVitals, nil)
@@ -255,12 +261,14 @@ func (tui *TUI) Apply(cmd app.Command) error {
 
 	case ui.SetVital:
 		tui.vitalsMu.Lock()
+
 		v, ok := tui.vitalsByName[c.Name]
 		if !ok {
 			tui.vitalsOrder = append(tui.vitalsOrder, c.Name)
 			v = &vital{}
 			tui.vitalsByName[c.Name] = v
 		}
+
 		v.Value = c.Value
 		v.Max = c.Max
 		tui.vitalsMu.Unlock()
@@ -270,9 +278,11 @@ func (tui *TUI) Apply(cmd app.Command) error {
 	case ui.RemoveVital:
 		tui.vitalsMu.Lock()
 		delete(tui.vitalsByName, c.Name)
+
 		for i, n := range tui.vitalsOrder {
 			if n == c.Name {
 				tui.vitalsOrder = append(tui.vitalsOrder[:i], tui.vitalsOrder[i+1:]...)
+
 				break
 			}
 		}
@@ -308,6 +318,7 @@ func (tui *TUI) Apply(cmd app.Command) error {
 	default:
 		return app.ErrCommandNotApplicable
 	}
+
 	return nil
 }
 
@@ -391,5 +402,6 @@ func makeNumpad(ev *tcell.EventKey) *tcell.EventKey {
 	if key, ok := numpadKeys[int(ev.Rune())]; ok {
 		return tcell.NewEventKey(key, 0, 0)
 	}
+
 	return ev
 }

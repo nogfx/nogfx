@@ -52,16 +52,19 @@ func TelnetNegotiation(policy NegotiationPolicy) app.Processor {
 		if !ok || len(tc.Bytes) != 3 || tc.Bytes[0] != connection.IAC {
 			return batch, nil
 		}
+
 		verb := tc.Bytes[1]
 		opt := tc.Bytes[2]
 		cfg := policy[opt]
 
 		var reply []byte
+
 		switch verb {
 		case connection.Will:
 			if their[opt] {
 				return batch, nil
 			}
+
 			if cfg.AcceptTheirs {
 				their[opt] = true
 				reply = []byte{connection.IAC, connection.Do, opt}
@@ -72,6 +75,7 @@ func TelnetNegotiation(policy NegotiationPolicy) app.Processor {
 			if our[opt] {
 				return batch, nil
 			}
+
 			if cfg.AcceptOurs {
 				our[opt] = true
 				reply = []byte{connection.IAC, connection.Will, opt}
@@ -82,12 +86,14 @@ func TelnetNegotiation(policy NegotiationPolicy) app.Processor {
 			if !their[opt] {
 				return batch, nil
 			}
+
 			their[opt] = false
 			reply = []byte{connection.IAC, connection.Dont, opt}
 		case connection.Dont:
 			if !our[opt] {
 				return batch, nil
 			}
+
 			our[opt] = false
 			reply = []byte{connection.IAC, connection.Wont, opt}
 		default:

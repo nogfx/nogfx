@@ -19,6 +19,7 @@ func (nvt *NVT) SplitFunc(data []byte, atEOF bool) (advance int, token []byte, e
 		if lastCR && b == '\n' && nvt.options[theirside][SuppressGoAhead].On() {
 			return i + 1, data[:i+1], nil
 		}
+
 		lastCR = b == '\r'
 
 		if b == GA {
@@ -54,6 +55,7 @@ func (nvt *NVT) Read(buffer []byte) (count int, err error) {
 			if lastCR && b == '\n' && nvt.options[theirside][SuppressGoAhead].On() {
 				return count, nil
 			}
+
 			lastCR = b == '\r'
 
 			continue
@@ -108,8 +110,10 @@ func (nvt *NVT) surface(cmd []byte) {
 	ev := decodeIAC(cmd)
 	if nvt.events != nil {
 		nvt.events <- ev
+
 		return
 	}
+
 	nvt.pendingEvents = append(nvt.pendingEvents, ev)
 }
 
@@ -119,8 +123,10 @@ func decodeIAC(cmd []byte) app.Event {
 	if len(cp) >= 5 && cp[0] == IAC && cp[1] == SB && cp[2] == GMCP &&
 		cp[len(cp)-2] == IAC && cp[len(cp)-1] == SE {
 		payload := append([]byte{}, cp[3:len(cp)-2]...)
+
 		return connection.GMCPFrame{Payload: payload}
 	}
+
 	return connection.TelnetCommand{Bytes: cp}
 }
 
@@ -131,6 +137,7 @@ func (nvt *NVT) Write(data []byte) (int, error) {
 		if ld > 2 && data[ld-2] == '\r' && data[ld-1] == '\n' {
 			data = data[0 : ld-2]
 		}
+
 		data = append(data, '\r', '\n')
 	}
 

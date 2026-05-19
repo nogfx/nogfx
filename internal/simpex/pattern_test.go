@@ -284,8 +284,10 @@ var (
 )
 
 func BenchmarkMatch(b *testing.B) {
-	var r1 [][]byte
-	var r2 [][][]byte
+	var (
+		r1 [][]byte
+		r2 [][][]byte
+	)
 
 	for name, benchmark := range benchmarks {
 		b.Run(fmt.Sprintf("%s simpex", name), func(b *testing.B) {

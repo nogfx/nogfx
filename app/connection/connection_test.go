@@ -12,19 +12,23 @@ import (
 // TestEventsSatisfyAppEvent guards against accidentally dropping the
 // EventMarker embed on a concrete event type.
 func TestEventsSatisfyAppEvent(t *testing.T) {
-	var _ app.Event = connection.TextLine{}
-	var _ app.Event = connection.Prompt{}
-	var _ app.Event = connection.TelnetCommand{}
-	var _ app.Event = connection.GMCPFrame{}
-	var _ app.Event = connection.StateChanged{}
+	var (
+		_ app.Event = connection.TextLine{}
+		_ app.Event = connection.Prompt{}
+		_ app.Event = connection.TelnetCommand{}
+		_ app.Event = connection.GMCPFrame{}
+		_ app.Event = connection.StateChanged{}
+	)
 }
 
 // TestCommandsSatisfyAppCommand guards against accidentally dropping the
 // CommandMarker embed on a concrete command type.
 func TestCommandsSatisfyAppCommand(t *testing.T) {
-	var _ app.Command = connection.Send{}
-	var _ app.Command = connection.Reconnect{}
-	var _ app.Command = connection.Disconnect{}
+	var (
+		_ app.Command = connection.Send{}
+		_ app.Command = connection.Reconnect{}
+		_ app.Command = connection.Disconnect{}
+	)
 }
 
 func TestEventPayloads(t *testing.T) {

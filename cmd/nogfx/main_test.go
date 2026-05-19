@@ -53,6 +53,7 @@ func TestParseAddress(t *testing.T) {
 
 			if tc.err != "" {
 				assert.Equal(t, tc.err, err.Error())
+
 				return
 			}
 

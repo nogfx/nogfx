@@ -11,10 +11,12 @@ import (
 
 func writeCreds(t *testing.T, dir, host, content string, mode os.FileMode) string {
 	t.Helper()
+
 	authDir := filepath.Join(dir, credentialsDir)
 	require.NoError(t, os.MkdirAll(authDir, 0o700))
 	path := filepath.Join(authDir, host+".env")
 	require.NoError(t, os.WriteFile(path, []byte(content), mode))
+
 	return path
 }
 

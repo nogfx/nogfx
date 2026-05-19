@@ -74,6 +74,7 @@ func TestRoomInfoDetails(t *testing.T) {
 			for _, falser := range tc.falsers {
 				assert.False(t, falser())
 			}
+
 			assert.True(t, tc.truther())
 		})
 	}
@@ -314,6 +315,7 @@ func TestRoomMessages(t *testing.T) {
 			if tc.err != "" {
 				require.Error(t, err)
 				assert.Equal(t, tc.err, err.Error())
+
 				return
 			} else if err != nil {
 				require.NoError(t, err)
@@ -334,6 +336,7 @@ func TestRoomMessages(t *testing.T) {
 
 			if tcdata == "" {
 				assert.Equal(t, tcdata, data)
+
 				return
 			}
 

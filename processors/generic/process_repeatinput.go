@@ -22,18 +22,24 @@ func RepeatInputProcessor() Processor {
 			send, ok := cmd.(connection.Send)
 			if !ok {
 				out = append(out, cmd)
+
 				continue
 			}
+
 			n, rest, ok := splitRepeatPrefix(send.Bytes)
 			if !ok {
 				out = append(out, cmd)
+
 				continue
 			}
+
 			for range n {
 				out = append(out, connection.Send{Bytes: rest})
 			}
 		}
+
 		batch.Commands = out
+
 		return batch, nil
 	}
 }
@@ -47,9 +53,11 @@ func splitRepeatPrefix(b []byte) (int, []byte, bool) {
 	if sp <= 0 {
 		return 0, nil, false
 	}
+
 	n, err := strconv.Atoi(string(b[:sp]))
 	if err != nil {
 		return 0, nil, false
 	}
+
 	return n, b[sp+1:], true
 }

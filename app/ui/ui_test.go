@@ -13,24 +13,28 @@ import (
 // TestEventsSatisfyAppEvent guards against accidentally dropping the
 // EventMarker embed.
 func TestEventsSatisfyAppEvent(t *testing.T) {
-	var _ app.Event = ui.Input{}
-	var _ app.Event = ui.Resize{}
+	var (
+		_ app.Event = ui.Input{}
+		_ app.Event = ui.Resize{}
+	)
 }
 
 // TestCommandsSatisfyAppCommand covers every UI command, so a new command
 // type added without the marker embed is caught.
 func TestCommandsSatisfyAppCommand(t *testing.T) {
-	var _ app.Command = ui.PrintLine{}
-	var _ app.Command = ui.SetHealth{}
-	var _ app.Command = ui.SetMana{}
-	var _ app.Command = ui.AddVital{}
-	var _ app.Command = ui.SetVital{}
-	var _ app.Command = ui.RemoveVital{}
-	var _ app.Command = ui.SetCharacter{}
-	var _ app.Command = ui.SetTarget{}
-	var _ app.Command = ui.SetRoom{}
-	var _ app.Command = ui.MaskInput{}
-	var _ app.Command = ui.UnmaskInput{}
+	var (
+		_ app.Command = ui.PrintLine{}
+		_ app.Command = ui.SetHealth{}
+		_ app.Command = ui.SetMana{}
+		_ app.Command = ui.AddVital{}
+		_ app.Command = ui.SetVital{}
+		_ app.Command = ui.RemoveVital{}
+		_ app.Command = ui.SetCharacter{}
+		_ app.Command = ui.SetTarget{}
+		_ app.Command = ui.SetRoom{}
+		_ app.Command = ui.MaskInput{}
+		_ app.Command = ui.UnmaskInput{}
+	)
 }
 
 func TestSnapshotShapes(t *testing.T) {

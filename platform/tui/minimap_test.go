@@ -406,6 +406,7 @@ func TestRenderMap(t *testing.T) {
 				strings.Join(rows.Strings(), "\n"),
 			) {
 				log.Println("RENDITION")
+
 				for _, str := range rows.Strings() {
 					log.Println(str)
 				}

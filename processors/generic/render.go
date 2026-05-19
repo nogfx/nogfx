@@ -25,6 +25,7 @@ func Render() app.Processor {
 		if !ok {
 			return batch, nil
 		}
+
 		switch msg := d.Message.(type) {
 		case *gmcp.CharName:
 			return batch.AppendCommand(ui.SetCharacter{
@@ -37,8 +38,10 @@ func Render() app.Processor {
 			if room != nil {
 				room.HasPlayer = true
 			}
+
 			return batch.AppendCommand(ui.SetRoom{Room: room}), nil
 		}
+
 		return batch, nil
 	}
 }

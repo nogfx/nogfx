@@ -35,6 +35,7 @@ const (
 // processor is a pass-through.
 func AutoLogin(creds map[string]string) app.Processor {
 	user := creds[CredentialsUser]
+
 	pass := creds[CredentialsPass]
 	if user == "" || pass == "" {
 		return func(b app.Batch) (app.Batch, error) { return b, nil }
@@ -47,14 +48,17 @@ func AutoLogin(creds map[string]string) app.Processor {
 		if consumed {
 			return batch, nil
 		}
+
 		ev, ok := batch.Event.(connection.TelnetCommand)
 		if !ok || !bytes.Equal(ev.Bytes, connection.IACWillGMCP) {
 			return batch, nil
 		}
+
 		consumed = true
 
 		reply := make([]byte, len(payload))
 		copy(reply, payload)
+
 		return batch.AppendCommand(connection.SendGMCP{Payload: reply}), nil
 	}
 }

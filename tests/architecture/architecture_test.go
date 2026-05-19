@@ -93,6 +93,7 @@ func classify(importPath string) Category {
 		// Project-meta tests sit outside the rule set.
 		return ""
 	}
+
 	return ""
 }
 
@@ -123,6 +124,7 @@ func TestPackagesAreClassified(t *testing.T) {
 		if strings.HasPrefix(rel, "tests/") {
 			continue // project-meta tests sit outside the rule set
 		}
+
 		if classify(pkg.PkgPath) == "" {
 			t.Errorf("package %q has no architectural category — extend classify() in this file", pkg.PkgPath)
 		}
@@ -143,14 +145,18 @@ func TestDependencyDirection(t *testing.T) {
 			if !strings.HasPrefix(importPath, modulePath) {
 				continue // stdlib or third-party
 			}
+
 			depCat := classify(importPath)
 			if depCat == "" {
 				t.Errorf("%s imports unclassified %s", pkg.PkgPath, importPath)
+
 				continue
 			}
+
 			if depCat == cat {
 				continue // same-category imports are always fine
 			}
+
 			if !slices.Contains(allowed[cat], depCat) {
 				t.Errorf(
 					"%s (%s) imports %s (%s) — %s may not depend on %s",
@@ -163,15 +169,19 @@ func TestDependencyDirection(t *testing.T) {
 
 func loadModulePackages(t *testing.T) []*packages.Package {
 	t.Helper()
+
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedImports,
 	}
+
 	pkgs, err := packages.Load(cfg, modulePath+"/...")
 	if err != nil {
 		t.Fatalf("load packages: %v", err)
 	}
+
 	if packages.PrintErrors(pkgs) > 0 {
 		t.Fatalf("packages had load errors")
 	}
+
 	return pkgs
 }

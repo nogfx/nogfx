@@ -31,6 +31,7 @@ func LogProcessor(dir, filename string) (Processor, error) {
 
 	return func(batch app.Batch) (app.Batch, error) {
 		var bs []byte
+
 		switch e := batch.Event.(type) {
 		case connection.TextLine:
 			bs = append(append([]byte{}, e.Bytes...), '\n')
@@ -39,12 +40,15 @@ func LogProcessor(dir, filename string) (Processor, error) {
 		case ui.Input:
 			bs = append(append([]byte("> "), e.Bytes...), '\n')
 		}
+
 		if len(bs) == 0 {
 			return batch, nil
 		}
+
 		if _, err := file.Write(bs); err != nil {
 			return batch, fmt.Errorf("failed to write to log: %w", err)
 		}
+
 		return batch, nil
 	}, nil
 }

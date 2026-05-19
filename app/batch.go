@@ -27,10 +27,12 @@ type Batch struct {
 
 func (b Batch) AppendEvent(e Event) Batch {
 	b.Events = append(b.Events, e)
+
 	return b
 }
 
 func (b Batch) AppendCommand(c Command) Batch {
 	b.Commands = append(b.Commands, c)
+
 	return b
 }

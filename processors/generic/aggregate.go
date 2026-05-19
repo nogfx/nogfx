@@ -20,8 +20,10 @@ import (
 // Message bundle is a turn-level view, and a tolerant consumer is
 // preferable to a stranded one. See docs/design/messages.md.
 func Aggregator() app.Processor {
-	var lines []connection.TextLine
-	var gmcp []connection.GMCPFrame
+	var (
+		lines []connection.TextLine
+		gmcp  []connection.GMCPFrame
+	)
 
 	return func(batch app.Batch) (app.Batch, error) {
 		switch ev := batch.Event.(type) {
@@ -39,6 +41,7 @@ func Aggregator() app.Processor {
 			gmcp = nil
 			batch = batch.AppendEvent(msg)
 		}
+
 		return batch, nil
 	}
 }

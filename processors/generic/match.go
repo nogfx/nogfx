@@ -29,22 +29,27 @@ func MatchInput(pat string, cb Callback) Processor {
 // MatchInputs matches any of the patterns against connection.Send commands.
 func MatchInputs(pats []string, cb Callback) Processor {
 	pbs := patternBytes(pats)
+
 	return func(batch app.Batch) (b app.Batch, err error) {
 		defer recoverCallback(&err)
 
 		var matches []Match
+
 		for i, cmd := range batch.Commands {
 			send, ok := cmd.(connection.Send)
 			if !ok {
 				continue
 			}
+
 			if caps := firstMatch(pbs, send.Bytes); caps != nil {
 				matches = append(matches, Match{Index: i, Captures: caps})
 			}
 		}
+
 		if len(matches) > 0 {
 			batch = cb(matches, batch)
 		}
+
 		return batch, nil
 	}
 }
@@ -59,6 +64,7 @@ func MatchOutput(pat string, cb Callback) Processor {
 // trigger event.
 func MatchOutputs(pats []string, cb Callback) Processor {
 	pbs := patternBytes(pats)
+
 	return func(batch app.Batch) (b app.Batch, err error) {
 		defer recoverCallback(&err)
 
@@ -66,10 +72,12 @@ func MatchOutputs(pats []string, cb Callback) Processor {
 		if !ok {
 			return batch, nil
 		}
+
 		caps := firstMatch(pbs, line.Bytes)
 		if caps == nil {
 			return batch, nil
 		}
+
 		return cb([]Match{{Index: 0, Captures: caps}}, batch), nil
 	}
 }
@@ -79,6 +87,7 @@ func patternBytes(pats []string) [][]byte {
 	for i, p := range pats {
 		out[i] = []byte(p)
 	}
+
 	return out
 }
 
@@ -88,6 +97,7 @@ func firstMatch(pats [][]byte, text []byte) [][]byte {
 			return caps
 		}
 	}
+
 	return nil
 }
 
@@ -100,8 +110,10 @@ func recoverCallback(err *error) {
 	if r := recover(); r != nil {
 		if rerr, ok := r.(error); ok {
 			*err = fmt.Errorf("match callback failed: %w", rerr)
+
 			return
 		}
+
 		*err = fmt.Errorf("match callback failed: %v", r)
 	}
 }

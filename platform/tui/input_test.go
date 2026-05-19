@@ -156,6 +156,7 @@ func TestRenderInput(t *testing.T) {
 			rows, cx, cy := tui.RenderInput(tc.width, tc.height)
 
 			assert.Equal(t, tc.rows, rows.Strings())
+
 			if tc.cursorpos != nil {
 				assert.Equal(t, []int{cx, cy}, tc.cursorpos)
 			}

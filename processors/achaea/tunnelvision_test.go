@@ -25,18 +25,22 @@ func runTV(t *testing.T, events ...connection.TextLine) []string {
 	chain := app.Chain(w.Processors()...)
 
 	var out []string
+
 	for _, ev := range events {
 		got, err := chain(app.Batch{Event: ev})
 		require.NoError(t, err)
+
 		for _, c := range got.Commands {
 			if pl, ok := c.(ui.PrintLine); ok {
 				out = append(out, string(pl.Line.Formatted))
 			}
 		}
+
 		if tl, ok := got.Event.(connection.TextLine); ok {
 			out = append(out, string(tl.Bytes))
 		}
 	}
+
 	return out
 }
 
@@ -133,9 +137,11 @@ func TestTunnelVision_FlushesAttackOnPrompt(t *testing.T) {
 	}
 
 	var summaries []string
+
 	for _, ev := range events {
 		got, err := chain(app.Batch{Event: ev})
 		require.NoError(t, err)
+
 		for _, c := range got.Commands {
 			if pl, ok := c.(ui.PrintLine); ok {
 				summaries = append(summaries, string(pl.Line.Formatted))
@@ -164,14 +170,17 @@ func TestTunnelVision_DoesNotFlushOnInterleavedGMCP(t *testing.T) {
 	}
 
 	var out []string
+
 	for _, ev := range events {
 		got, err := chain(app.Batch{Event: ev})
 		require.NoError(t, err)
+
 		for _, c := range got.Commands {
 			if pl, ok := c.(ui.PrintLine); ok {
 				out = append(out, string(pl.Line.Formatted))
 			}
 		}
+
 		if tl, ok := got.Event.(connection.TextLine); ok {
 			out = append(out, string(tl.Bytes))
 		}

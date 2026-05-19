@@ -13,6 +13,7 @@ import (
 
 func makeGMCP(id string, data interface{}) string {
 	jsondata, _ := json.Marshal(data)
+
 	return fmt.Sprintf("%s %s", id, string(jsondata))
 }
 
@@ -51,9 +52,11 @@ func TestParse(t *testing.T) {
 				if assert.Error(t, err) {
 					assert.Equal(t, tc.err, err.Error())
 				}
+
 				return
 			} else if err != nil {
 				assert.Empty(t, err.Error())
+
 				return
 			}
 
