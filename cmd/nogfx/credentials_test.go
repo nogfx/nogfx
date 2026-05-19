@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/nogfx/nogfx/processors/generic"
 )
 
 func writeCreds(t *testing.T, dir, host, content string, mode os.FileMode) string {
@@ -20,31 +22,53 @@ func writeCreds(t *testing.T, dir, host, content string, mode os.FileMode) strin
 	return path
 }
 
-func TestLoadCredentials_ReadsKeyValueFile(t *testing.T) {
+func TestLoadCredentials_ReadsLineFormat(t *testing.T) {
 	dir := t.TempDir()
-	writeCreds(t, dir, "example.com", "user=testuser\npass=testpass\n", 0o600)
+	writeCreds(t, dir, "example.com", "testuser testpass\n", 0o600)
 
 	creds, err := loadCredentials(dir, "example.com")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{"user": "testuser", "pass": "testpass"}, creds)
+	assert.Equal(t, []generic.Credential{{Name: "testuser", Password: "testpass"}}, creds)
+}
+
+func TestLoadCredentials_PreservesOrderAcrossMultipleEntries(t *testing.T) {
+	dir := t.TempDir()
+	writeCreds(t, dir, "example.com", "first firstpass\nsecond secondpass\nthird thirdpass\n", 0o600)
+
+	creds, err := loadCredentials(dir, "example.com")
+	require.NoError(t, err)
+	assert.Equal(t, []generic.Credential{
+		{Name: "first", Password: "firstpass"},
+		{Name: "second", Password: "secondpass"},
+		{Name: "third", Password: "thirdpass"},
+	}, creds)
 }
 
 func TestLoadCredentials_IgnoresCommentsAndBlankLines(t *testing.T) {
 	dir := t.TempDir()
-	writeCreds(t, dir, "example.com", "# header\n\nuser=testuser\n  # indented comment\npass=testpass\n", 0o600)
+	writeCreds(t, dir, "example.com", "# header\n\ntestuser testpass\n  # indented comment\n", 0o600)
 
 	creds, err := loadCredentials(dir, "example.com")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{"user": "testuser", "pass": "testpass"}, creds)
+	assert.Equal(t, []generic.Credential{{Name: "testuser", Password: "testpass"}}, creds)
 }
 
-func TestLoadCredentials_TrimsWhitespace(t *testing.T) {
+func TestLoadCredentials_TrimsSurroundingWhitespace(t *testing.T) {
 	dir := t.TempDir()
-	writeCreds(t, dir, "example.com", "  user = testuser  \n\tpass\t=\ttestpass\n", 0o600)
+	writeCreds(t, dir, "example.com", "  testuser\ttestpass  \n", 0o600)
 
 	creds, err := loadCredentials(dir, "example.com")
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{"user": "testuser", "pass": "testpass"}, creds)
+	assert.Equal(t, []generic.Credential{{Name: "testuser", Password: "testpass"}}, creds)
+}
+
+func TestLoadCredentials_PreservesInternalPasswordWhitespace(t *testing.T) {
+	dir := t.TempDir()
+	writeCreds(t, dir, "example.com", "testuser pass with spaces\n", 0o600)
+
+	creds, err := loadCredentials(dir, "example.com")
+	require.NoError(t, err)
+	assert.Equal(t, []generic.Credential{{Name: "testuser", Password: "pass with spaces"}}, creds)
 }
 
 func TestLoadCredentials_ReturnsNilWhenMissing(t *testing.T) {
@@ -54,18 +78,18 @@ func TestLoadCredentials_ReturnsNilWhenMissing(t *testing.T) {
 	assert.Nil(t, creds)
 }
 
-func TestLoadCredentials_RejectsMalformedLine(t *testing.T) {
+func TestLoadCredentials_RejectsLineMissingPassword(t *testing.T) {
 	dir := t.TempDir()
-	writeCreds(t, dir, "example.com", "user testuser\n", 0o600)
+	writeCreds(t, dir, "example.com", "testuser\n", 0o600)
 
 	_, err := loadCredentials(dir, "example.com")
 	assert.ErrorContains(t, err, "malformed line")
 }
 
-func TestLoadCredentials_RejectsEmptyKey(t *testing.T) {
+func TestLoadCredentials_TrailingWhitespaceOnNameIsMalformed(t *testing.T) {
 	dir := t.TempDir()
-	writeCreds(t, dir, "example.com", "=value\n", 0o600)
+	writeCreds(t, dir, "example.com", "testuser   \t  \n", 0o600)
 
 	_, err := loadCredentials(dir, "example.com")
-	assert.ErrorContains(t, err, "empty key")
+	assert.ErrorContains(t, err, "malformed line")
 }

@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
+
+	"github.com/nogfx/nogfx/processors/generic"
 )
 
 // credentialsDir is the subdirectory under the per-user nogfx root where
@@ -14,22 +17,27 @@ import (
 // from logs/ to make it easy to exclude from backups or sync.
 const credentialsDir = "auth"
 
-// loadCredentials reads a key=value credentials file for the given host
-// from $directory/auth/<host>.env, returning a nil map if the file does
-// not exist (the world's AutoLogin then becomes a pass-through).
+// loadCredentials reads a per-host credentials file from
+// $directory/auth/<host>.env, returning a nil slice if the file does
+// not exist (AutoLogin then becomes a pass-through).
 //
-// Format (one entry per line):
+// Format (one character per line):
 //
 //	# comments and blank lines are ignored
-//	user = …
-//	pass = …
+//	name password
+//	othername otherpassword
 //
-// Whitespace around the key and value is trimmed; values are not quoted.
+// The name is the first whitespace-delimited token; the password is the
+// remainder of the line with surrounding whitespace trimmed. Order is
+// preserved — the first line is the credential the GMCP auto-login
+// currently uses. Multiple lines are accepted now so files can be
+// prepared ahead of the future per-character selection flow.
+//
 // The file's permissions are inspected — if other users have read or
 // write access, a warning is logged but loading continues. This protects
 // against accidentally world-readable files without forcing a hard fail
 // the user can't easily diagnose.
-func loadCredentials(dir, host string) (map[string]string, error) {
+func loadCredentials(dir, host string) ([]generic.Credential, error) {
 	path := filepath.Join(dir, credentialsDir, host+".env")
 
 	info, err := os.Stat(path)
@@ -59,7 +67,7 @@ func loadCredentials(dir, host string) (map[string]string, error) {
 		}
 	}()
 
-	creds := map[string]string{}
+	var creds []generic.Credential
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -68,19 +76,15 @@ func loadCredentials(dir, host string) (map[string]string, error) {
 			continue
 		}
 
-		eq := strings.IndexByte(line, '=')
-		if eq < 0 {
-			return nil, fmt.Errorf("credentials %q: malformed line %q (missing =)", path, line)
+		sep := strings.IndexFunc(line, unicode.IsSpace)
+		if sep < 0 {
+			return nil, fmt.Errorf("credentials %q: malformed line %q (expected \"name password\")", path, line)
 		}
 
-		key := strings.TrimSpace(line[:eq])
-
-		val := strings.TrimSpace(line[eq+1:])
-		if key == "" {
-			return nil, fmt.Errorf("credentials %q: empty key in line %q", path, line)
-		}
-
-		creds[key] = val
+		creds = append(creds, generic.Credential{
+			Name:     line[:sep],
+			Password: strings.TrimSpace(line[sep+1:]),
+		})
 	}
 
 	if err := scanner.Err(); err != nil {

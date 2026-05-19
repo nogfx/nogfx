@@ -8,15 +8,14 @@ import (
 	"github.com/nogfx/nogfx/platform/gmcp"
 )
 
-// CredentialsUser and CredentialsPass are the credentials-map keys
-// AutoLogin reads. Worlds that share GMCP-based authentication conventions
-// (the Iron Realms family, Mudlet-spec servers) can use AutoLogin
-// directly; worlds with their own auth wire-format will need their own
-// processor.
-const (
-	CredentialsUser = "user"
-	CredentialsPass = "pass"
-)
+// Credential is one character's login pair. The composition root parses
+// the per-host credentials file into an ordered slice of these and hands
+// it to AutoLogin; future per-character selection (game-specific prompt
+// detection) will pick from the same slice by name.
+type Credential struct {
+	Name     string
+	Password string
+}
 
 // AutoLogin returns a processor that authenticates via a GMCP Char.Login
 // frame. The processor watches for the server announcing GMCP support
@@ -31,17 +30,20 @@ const (
 // matching event and AutoLogin stays dormant — the manual login flow then
 // applies.
 //
-// With missing user, missing pass, or no credentials at all, the returned
-// processor is a pass-through.
-func AutoLogin(creds map[string]string) app.Processor {
-	user := creds[CredentialsUser]
-
-	pass := creds[CredentialsPass]
-	if user == "" || pass == "" {
+// The processor uses the first credential in the slice. Multi-character
+// selection at runtime is a future feature that requires game-specific
+// name/password prompt detection (and the GMCP path being disabled then,
+// since it commits to one character before the user has chosen). With an
+// empty slice, the returned processor is a pass-through.
+func AutoLogin(creds []Credential) app.Processor {
+	if len(creds) == 0 || creds[0].Name == "" || creds[0].Password == "" {
 		return func(b app.Batch) (app.Batch, error) { return b, nil }
 	}
 
-	payload := []byte((&gmcp.CharLogin{Name: user, Password: pass}).Marshal())
+	payload := []byte((&gmcp.CharLogin{
+		Name:     creds[0].Name,
+		Password: creds[0].Password,
+	}).Marshal())
 	consumed := false
 
 	return func(batch app.Batch) (app.Batch, error) {

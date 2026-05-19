@@ -73,12 +73,11 @@ The "QUIT" exit is always available. If in doubt: `QUIT` first, ask after. A cle
 ## Credentials
 
 - **Location:** `~/nogfx/auth/<host>.env`, mode `0600`, owned by the user.
-- **Format:** plain `key=value` pairs, one per line. Lines beginning with `#` are comments; blank lines are ignored. Whitespace around the key and value is trimmed. Auto-login is GMCP-based (a `Char.Login` frame), so the keys are world-agnostic — `user` and `pass`:
+- **Format:** one character per line, `name password`, with the name as the first whitespace-delimited token and the password as the rest of the line (surrounding whitespace trimmed). Lines beginning with `#` are comments; blank lines are ignored. Auto-login is GMCP-based (a `Char.Login` frame) and currently uses the first line; additional lines are accepted for the future per-character selection flow:
 
   ```
   # ~/nogfx/auth/achaea.com.env
-  user = …
-  pass = …
+  name password
   ```
 
 - **Lifecycle:** the user creates and maintains the file. `nogfx` is the only consumer; the assistant never reads it directly, never `cat`s it, never sources it into a shell. If the file is missing or unreadable, auto-login is silently skipped (the session sits at the login prompt, which is the safe failure mode).
