@@ -21,10 +21,10 @@ func TestAutoLogin_SendsCharLoginOnGMCPWill(t *testing.T) {
 		Bytes: connection.IACWillGMCP,
 	}})
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
+	require.Len(t, got.Effects, 1)
 
-	send, ok := got.Commands[0].(connection.SendGMCP)
-	require.True(t, ok, "expected SendGMCP, got %T", got.Commands[0])
+	send, ok := got.Effects[0].(connection.SendGMCP)
+	require.True(t, ok, "expected SendGMCP, got %T", got.Effects[0])
 
 	payload := string(send.Payload)
 	assert.True(t, strings.HasPrefix(payload, "Char.Login "), "payload: %q", payload)
@@ -40,9 +40,9 @@ func TestAutoLogin_UsesFirstCredential(t *testing.T) {
 
 	got, err := proc(app.Batch{Event: connection.TelnetCommand{Bytes: connection.IACWillGMCP}})
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
+	require.Len(t, got.Effects, 1)
 
-	payload := string(got.Commands[0].(connection.SendGMCP).Payload)
+	payload := string(got.Effects[0].(connection.SendGMCP).Payload)
 	assert.Contains(t, payload, `"name":"testuser"`)
 	assert.NotContains(t, payload, `"name":"second"`)
 }
@@ -54,11 +54,11 @@ func TestAutoLogin_IsSingleUse(t *testing.T) {
 
 	got, err := proc(app.Batch{Event: connection.TelnetCommand{Bytes: connection.IACWillGMCP}})
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
+	require.Len(t, got.Effects, 1)
 
 	got, err = proc(app.Batch{Event: connection.TelnetCommand{Bytes: connection.IACWillGMCP}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands, "credentials must not be re-sent")
+	assert.Empty(t, got.Effects, "credentials must not be re-sent")
 }
 
 func TestAutoLogin_IgnoresUnrelatedTelnetCommands(t *testing.T) {
@@ -68,7 +68,7 @@ func TestAutoLogin_IgnoresUnrelatedTelnetCommands(t *testing.T) {
 
 	got, err := proc(app.Batch{Event: connection.TelnetCommand{Bytes: connection.IACWillEcho}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }
 
 func TestAutoLogin_IgnoresUnrelatedEventTypes(t *testing.T) {
@@ -78,19 +78,19 @@ func TestAutoLogin_IgnoresUnrelatedEventTypes(t *testing.T) {
 
 	got, err := proc(app.Batch{Event: connection.TextLine{Bytes: []byte("anything")}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }
 
 func TestAutoLogin_EmptyCredentialsIsPassthrough(t *testing.T) {
 	proc := generic.AutoLogin(nil)
 	got, err := proc(app.Batch{Event: connection.TelnetCommand{Bytes: connection.IACWillGMCP}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }
 
 func TestAutoLogin_MissingPasswordIsPassthrough(t *testing.T) {
 	proc := generic.AutoLogin([]generic.Credential{{Name: "testuser"}})
 	got, err := proc(app.Batch{Event: connection.TelnetCommand{Bytes: connection.IACWillGMCP}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }

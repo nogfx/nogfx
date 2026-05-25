@@ -106,32 +106,51 @@ func splitCRLF(data []byte) [][]byte {
 	return parts
 }
 
-// Apply applies a single command to the connection. Commands not targeting
-// this endpoint return app.ErrCommandNotApplicable.
-func (nvt *NVT) Apply(cmd app.Command) error {
-	switch c := cmd.(type) {
+// Apply applies a single effect to the connection. Effects not targeting
+// this endpoint return app.ErrEffectNotApplicable. On a successful
+// Send / SendGMCP, Apply returns a connection.Sent event carrying the
+// original effect — the engine queues it into the chain ahead of any
+// new endpoint events, and the Recorder processor uses it as the
+// authoritative "what we sent" feed for the Tracker queue. A wire-write
+// failure returns the error and no Sent — the queue stays clean.
+// (The MUD-domain command, when there is one, is inside
+// connection.Send.Bytes.)
+func (nvt *NVT) Apply(eff app.Effect) ([]app.Event, error) {
+	switch c := eff.(type) {
 	case connection.Send:
 		_, err := nvt.Write(c.Bytes)
+		if err != nil {
+			return nil, err
+		}
 
-		return err
+		return []app.Event{connection.Sent{Effect: c}}, nil
 
 	case connection.SendGMCP:
 		frame := make([]byte, 0, len(c.Payload)+5)
 		frame = append(frame, IAC, SB, GMCP)
 		frame = append(frame, c.Payload...)
 		frame = append(frame, IAC, SE)
+
 		_, err := nvt.Write(frame)
+		if err != nil {
+			return nil, err
+		}
 
-		return err
+		return []app.Event{connection.Sent{Effect: c}}, nil
 
-	case connection.Reconnect, connection.Disconnect:
-		// Not yet implemented. Returning nil avoids the engine treating
-		// these as routing failures; the actual transport-control wiring
-		// arrives in a follow-up.
+	case connection.Disconnect:
+		// Close the underlying net.Conn. The scanner inside Run will
+		// observe the close and exit, which causes Run to return and the
+		// engine to shut down via the per-endpoint goroutine cancelling
+		// the shared context.
 		_ = c
 
-		return nil
+		if err := nvt.Close(); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}
 
-	return app.ErrCommandNotApplicable
+	return nil, app.ErrEffectNotApplicable
 }

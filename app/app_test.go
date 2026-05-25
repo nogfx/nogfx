@@ -16,7 +16,7 @@ type fakeEvent struct {
 }
 
 type fakeCommand struct {
-	app.CommandMarker
+	app.EffectMarker
 	Name string
 }
 
@@ -25,17 +25,17 @@ func TestBatchAppend(t *testing.T) {
 
 	b = b.AppendEvent(fakeEvent{Name: "first"})
 	b = b.AppendEvent(fakeEvent{Name: "second"})
-	b = b.AppendCommand(fakeCommand{Name: "do"})
+	b = b.AppendEffect(fakeCommand{Name: "do"})
 
 	require.Len(t, b.Events, 2)
-	require.Len(t, b.Commands, 1)
+	require.Len(t, b.Effects, 1)
 	assert.Equal(t, "first", b.Events[0].(fakeEvent).Name)
 	assert.Equal(t, "second", b.Events[1].(fakeEvent).Name)
-	assert.Equal(t, "do", b.Commands[0].(fakeCommand).Name)
+	assert.Equal(t, "do", b.Effects[0].(fakeCommand).Name)
 }
 
 func TestBatchAppendIsCopy(t *testing.T) {
-	// AppendEvent / AppendCommand return new Batch values; the caller's
+	// AppendEvent / AppendEffect return new Batch values; the caller's
 	// original Batch is unmodified after Append on a copy (because the
 	// internal slice header lives on the value receiver).
 	a := app.Batch{}
@@ -108,9 +108,9 @@ func TestChain_StopsOnError(t *testing.T) {
 	assert.Equal(t, 2, calls, "processors after the failing one should not run")
 }
 
-func TestErrCommandNotApplicableSentinel(t *testing.T) {
+func TestErrEffectNotApplicableSentinel(t *testing.T) {
 	// The wrapping pattern endpoints use should round-trip through
-	// errors.Is so the engine's routing can identify "not my command".
-	wrapped := errors.Join(app.ErrCommandNotApplicable, errors.New("ignored"))
-	assert.ErrorIs(t, wrapped, app.ErrCommandNotApplicable)
+	// errors.Is so the engine's routing can identify "not my effect".
+	wrapped := errors.Join(app.ErrEffectNotApplicable, errors.New("ignored"))
+	assert.ErrorIs(t, wrapped, app.ErrEffectNotApplicable)
 }

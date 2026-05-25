@@ -16,24 +16,26 @@ func TestEventsSatisfyAppEvent(t *testing.T) {
 	var (
 		_ app.Event = ui.Input{}
 		_ app.Event = ui.Resize{}
+		_ app.Event = ui.ReFormatting{}
 	)
 }
 
-// TestCommandsSatisfyAppCommand covers every UI command, so a new command
+// TestEffectsSatisfyAppEffect covers every UI effect, so a new effect
 // type added without the marker embed is caught.
-func TestCommandsSatisfyAppCommand(t *testing.T) {
+func TestEffectsSatisfyAppEffect(t *testing.T) {
 	var (
-		_ app.Command = ui.PrintLine{}
-		_ app.Command = ui.SetHealth{}
-		_ app.Command = ui.SetMana{}
-		_ app.Command = ui.AddVital{}
-		_ app.Command = ui.SetVital{}
-		_ app.Command = ui.RemoveVital{}
-		_ app.Command = ui.SetCharacter{}
-		_ app.Command = ui.SetTarget{}
-		_ app.Command = ui.SetRoom{}
-		_ app.Command = ui.MaskInput{}
-		_ app.Command = ui.UnmaskInput{}
+		_ app.Effect = ui.PrintLine{}
+		_ app.Effect = ui.ReFormat{}
+		_ app.Effect = ui.SetHealth{}
+		_ app.Effect = ui.SetMana{}
+		_ app.Effect = ui.AddVital{}
+		_ app.Effect = ui.SetVital{}
+		_ app.Effect = ui.RemoveVital{}
+		_ app.Effect = ui.SetCharacter{}
+		_ app.Effect = ui.SetTarget{}
+		_ app.Effect = ui.SetRoom{}
+		_ app.Effect = ui.MaskInput{}
+		_ app.Effect = ui.UnmaskInput{}
 	)
 }
 
@@ -46,11 +48,11 @@ func TestSnapshotShapes(t *testing.T) {
 
 func TestSetRoomCarriesNavigationPointer(t *testing.T) {
 	room := &navigation.Room{Name: "Forest"}
-	cmd := ui.SetRoom{Room: room}
-	assert.Same(t, room, cmd.Room)
+	eff := ui.SetRoom{Room: room}
+	assert.Same(t, room, eff.Room)
 }
 
-func TestVitalsCommandsCarryValues(t *testing.T) {
+func TestVitalsEffectsCarryValues(t *testing.T) {
 	assert.Equal(t, 30, ui.SetHealth{Value: 30, Max: 100}.Value)
 	assert.Equal(t, 100, ui.SetHealth{Value: 30, Max: 100}.Max)
 

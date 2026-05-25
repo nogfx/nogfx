@@ -20,7 +20,7 @@ func TestRenderTUIMap(t *testing.T) {
 		SetStyleFunc:       func(_ tcell.Style) {},
 	})
 
-	_ = ui.Apply(uipkg.SetRoom{Room: &navigation.Room{}})
+	_, _ = ui.Apply(uipkg.SetRoom{Room: &navigation.Room{}})
 	rows := ui.RenderMap(5, 3)
 
 	assert.Equal(t,

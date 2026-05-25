@@ -36,7 +36,7 @@ type Target struct {
 
 	// pendingSends accumulates "settarget …" byte sequences produced by
 	// auto-retargeting. They are drained by the world's processor into
-	// connection.Send commands so the engine routes them to the wire.
+	// connection.Send effects so the engine routes them to the wire.
 	pendingSends [][]byte
 }
 
@@ -45,10 +45,10 @@ func NewTarget() *Target {
 	return &Target{Health: -1}
 }
 
-// SetTargetCommand returns a ui.SetTarget command reflecting the current
+// SetTargetEffect returns a ui.SetTarget effect reflecting the current
 // target, suitable for appending to a batch. A nil Target clears the UI's
 // current target.
-func (tgt *Target) SetTargetCommand() ui.SetTarget {
+func (tgt *Target) SetTargetEffect() ui.SetTarget {
 	if tgt.Name == "" {
 		return ui.SetTarget{Target: nil}
 	}
@@ -66,7 +66,7 @@ func (tgt *Target) SetTargetCommand() ui.SetTarget {
 }
 
 // DrainSends returns and clears the accumulated send-byte sequences. The
-// caller wraps each in a connection.Send command and appends to the batch.
+// caller wraps each in a connection.Send effect and appends to the batch.
 func (tgt *Target) DrainSends() [][]byte {
 	sends := tgt.pendingSends
 	tgt.pendingSends = nil

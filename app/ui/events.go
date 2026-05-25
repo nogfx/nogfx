@@ -1,5 +1,5 @@
 // Package ui holds the contract for the user-facing endpoint: the events the
-// UI emits (user input, resize, …) and the commands it accepts (print,
+// UI emits (user input, resize, …) and the effects it accepts (print,
 // vitals, target, …). Concrete implementations of the UI (e.g. tcell) live
 // in platform/.
 package ui
@@ -19,12 +19,12 @@ type Resize struct {
 	Width, Height int
 }
 
-// ReFormatting is the UI's reply to a ReFormat command: one event per
+// ReFormatting is the UI's reply to a ReFormat effect: one event per
 // scrollback line in scope, in scrollback order (oldest first). Processors
 // that recognise their own lines emit a replacement PrintLine carrying the
 // same Line.ID so the UI overwrites the slot in place.
 //
-// ReFormatting implements app.GuardedEvent and forbids ReFormat commands
+// ReFormatting implements app.GuardedEvent and forbids ReFormat effects
 // in its batch — emitting one would re-enter the same code path and loop.
 type ReFormatting struct {
 	app.EventMarker
@@ -32,8 +32,8 @@ type ReFormatting struct {
 }
 
 // Forbids implements app.GuardedEvent.
-func (ReFormatting) Forbids(cmd app.Command) bool {
-	_, ok := cmd.(ReFormat)
+func (ReFormatting) Forbids(eff app.Effect) bool {
+	_, ok := eff.(ReFormat)
 
 	return ok
 }

@@ -19,8 +19,8 @@ func TestOutput_TextLineToPrintLine(t *testing.T) {
 
 	got, err := generic.Output()(batch)
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
-	line := got.Commands[0].(ui.PrintLine).Line
+	require.Len(t, got.Effects, 1)
+	line := got.Effects[0].(ui.PrintLine).Line
 	assert.Equal(t, []byte("you see an orc"), line.Raw)
 	assert.Equal(t, []byte("you see an orc"), line.Formatted)
 }
@@ -32,8 +32,8 @@ func TestOutput_PromptAlsoPrints(t *testing.T) {
 
 	got, err := generic.Output()(batch)
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
-	line := got.Commands[0].(ui.PrintLine).Line
+	require.Len(t, got.Effects, 1)
+	line := got.Effects[0].(ui.PrintLine).Line
 	assert.Equal(t, []byte("hp:50 >"), line.Raw)
 	assert.Equal(t, []byte("hp:50 >"), line.Formatted)
 }
@@ -45,5 +45,5 @@ func TestOutput_IgnoresUIEvents(t *testing.T) {
 
 	got, err := generic.Output()(batch)
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }

@@ -23,7 +23,7 @@ type world struct {
 // World holds the Achaea-specific state and exposes a Processors slice the
 // composition root (cmd/nogfx/main.go) splices into the engine chain. The
 // world is unaware of logging, user scripts, and any other infrastructure
-// around it — only its own state and feature generic.
+// around it — only its own state and feature processors.
 type World struct {
 	state *world
 	tv    TunnelVision
@@ -31,7 +31,7 @@ type World struct {
 
 // New constructs an Achaea World. New takes no UI, Connection, or logging
 // references — everything the world does flows through the batch's events
-// and commands.
+// and effects.
 func New() *World {
 	state := &world{
 		Character: &Character{},
@@ -102,7 +102,7 @@ func (world *world) cmdprocess(batch app.Batch) (app.Batch, error) {
 	switch ev := batch.Event.(type) {
 	case connection.TelnetCommand:
 		if bytes.Equal(ev.Bytes, connection.IACWillGMCP) {
-			batch = batch.AppendCommand(connection.SendGMCP{
+			batch = batch.AppendEffect(connection.SendGMCP{
 				Payload: []byte((&gmcp.CoreSupportsSet{
 					"Char":         1,
 					"Char.Items":   1,
@@ -135,15 +135,15 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 	switch msg := message.(type) {
 	case *gmcp.CharItemsList:
 		world.Target.FromCharItemsList(msg)
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 
 	case *gmcp.CharItemsAdd:
 		world.Target.FromCharItemsAdd(msg)
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 
 	case *gmcp.CharItemsRemove:
 		world.Target.FromCharItemsRemove(msg)
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 
 	case *gmcp.CharName:
 		world.Character.FromCharName(msg)
@@ -153,10 +153,10 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 			[]byte((&gmcp.CommChannelPlayers{}).Marshal()),
 			[]byte((&igmcp.IRERiftRequest{}).Marshal()),
 		} {
-			batch = batch.AppendCommand(connection.SendGMCP{Payload: m})
+			batch = batch.AppendEffect(connection.SendGMCP{Payload: m})
 		}
 
-		batch = batch.AppendCommand(ui.SetCharacter{
+		batch = batch.AppendEffect(ui.SetCharacter{
 			Name:  world.Character.Name,
 			Title: world.Character.Title,
 		})
@@ -164,11 +164,11 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 	case *agmcp.CharStatus:
 		world.Character.FromCharStatus(msg)
 		world.Target.FromCharStatus(msg)
-		batch = batch.AppendCommand(ui.SetCharacter{
+		batch = batch.AppendEffect(ui.SetCharacter{
 			Name:  world.Character.Name,
 			Title: world.Character.Title,
 		})
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 
 	case *agmcp.CharVitals:
 		world.Character.FromCharVitals(msg)
@@ -176,7 +176,7 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 
 	case *gmcp.RoomInfo:
 		world.Target.FromRoomInfo(msg)
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 
 		if world.Room != nil {
 			world.Room.HasPlayer = false
@@ -184,42 +184,42 @@ func (world *world) dispatchGMCP(batch app.Batch, data []byte) app.Batch {
 
 		world.Room = msg.AsNavigation()
 		world.Room.HasPlayer = true
-		batch = batch.AppendCommand(ui.SetRoom{Room: world.Room})
+		batch = batch.AppendEffect(ui.SetRoom{Room: world.Room})
 
 	case *igmcp.IRETargetSet:
 		world.Target.FromIRETargetSet(msg)
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 
 	case *igmcp.IRETargetInfo:
 		world.Target.FromIRETargetInfo(msg)
-		batch = batch.AppendCommand(world.Target.SetTargetCommand())
+		batch = batch.AppendEffect(world.Target.SetTargetEffect())
 	}
 
-	// Drain any Send commands the Target accumulated during this dispatch
+	// Drain any Send effects the Target accumulated during this dispatch
 	// (e.g. settarget on auto-retarget).
 	for _, b := range world.Target.DrainSends() {
-		batch = batch.AppendCommand(connection.Send{Bytes: b})
+		batch = batch.AppendEffect(connection.Send{Bytes: b})
 	}
 
 	return batch
 }
 
 func appendVitalsCommands(batch app.Batch, c *Character) app.Batch {
-	batch = batch.AppendCommand(ui.SetHealth{Value: c.Health, Max: c.MaxHealth})
-	batch = batch.AppendCommand(ui.SetMana{Value: c.Mana, Max: c.MaxMana})
-	batch = batch.AppendCommand(ui.AddVital{Name: "endurance", Value: c.Endurance, Max: c.MaxEndurance})
+	batch = batch.AppendEffect(ui.SetHealth{Value: c.Health, Max: c.MaxHealth})
+	batch = batch.AppendEffect(ui.SetMana{Value: c.Mana, Max: c.MaxMana})
+	batch = batch.AppendEffect(ui.AddVital{Name: "endurance", Value: c.Endurance, Max: c.MaxEndurance})
 
-	batch = batch.AppendCommand(ui.AddVital{Name: "willpower", Value: c.Willpower, Max: c.MaxWillpower})
+	batch = batch.AppendEffect(ui.AddVital{Name: "willpower", Value: c.Willpower, Max: c.MaxWillpower})
 	if c.Ferocity > 0 {
-		batch = batch.AppendCommand(ui.AddVital{Name: "ferocity", Value: c.Ferocity, Max: 100})
+		batch = batch.AppendEffect(ui.AddVital{Name: "ferocity", Value: c.Ferocity, Max: 100})
 	}
 
 	if c.Kai > 0 {
-		batch = batch.AppendCommand(ui.AddVital{Name: "kai", Value: c.Kai, Max: 100})
+		batch = batch.AppendEffect(ui.AddVital{Name: "kai", Value: c.Kai, Max: 100})
 	}
 
 	if c.Karma > 0 {
-		batch = batch.AppendCommand(ui.AddVital{Name: "karma", Value: c.Karma, Max: 100})
+		batch = batch.AppendEffect(ui.AddVital{Name: "karma", Value: c.Karma, Max: 100})
 	}
 
 	return batch

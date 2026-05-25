@@ -4,7 +4,7 @@ Some features (TunnelVision, future highlighters, user-script formatters) need t
 
 ## What's not used: tags
 
-An earlier sketch had `ui.PrintLine` carry a `Tag` field so the UI could index its scrollback by classification ("attack", "weather", …) and a `Reformat` command could target a specific tag. We rejected this. Tags require every emitter to maintain a taxonomy, processors and the UI both have to agree on the vocabulary, and classification ends up living in two places (the processor that emitted the line and the UI that stored the tag). Pattern-matching on the raw bytes — same as for live output — keeps classification in one place.
+An earlier sketch had `ui.PrintLine` carry a `Tag` field so the UI could index its scrollback by classification ("attack", "weather", …) and a `Reformat` effect could target a specific tag. We rejected this. Tags require every emitter to maintain a taxonomy, processors and the UI both have to agree on the vocabulary, and classification ends up living in two places (the processor that emitted the line and the UI that stored the tag). Pattern-matching on the raw bytes — same as for live output — keeps classification in one place.
 
 ## The `Line` struct
 
@@ -18,7 +18,7 @@ type Line struct {
 }
 
 type PrintLine struct {
-    app.CommandMarker
+    app.EffectMarker
     Line Line
 }
 ```
@@ -32,7 +32,7 @@ Why the wrapper rather than three fields on `PrintLine` directly: processors onl
 ```
 TunnelVision toggle
   → emit ui.ReFormat{}
-       (command, applied by the UI)
+       (effect, applied by the UI)
   → UI replays every scrollback line as ui.ReFormatting{Line} events,
     one event per line, in scrollback order
   → engine drains each ReFormatting event through the processor chain
@@ -48,7 +48,7 @@ Per-line granularity matches the existing one-event-per-batch model: the local F
 
 ```go
 type ReFormat struct {
-    app.CommandMarker
+    app.EffectMarker
 }
 ```
 
@@ -56,18 +56,18 @@ Every scrollback line replays. We considered scopes (all visible, last N) but ea
 
 ## Guarding against loops
 
-The round-trip is intentionally re-entrant: a `ReFormatting` event flows through the same chain that emits `PrintLine` commands. If a processor mistakenly emits a `ReFormat` command in response to a `ReFormatting` event, the next replay produces another `ReFormatting` flood, which re-enters the same code path. Easy footgun.
+The round-trip is intentionally re-entrant: a `ReFormatting` event flows through the same chain that emits `PrintLine` effects. If a processor mistakenly emits a `ReFormat` effect in response to a `ReFormatting` event, the next replay produces another `ReFormatting` flood, which re-enters the same code path. Easy footgun.
 
 We bake the rule into the contract via an opt-in interface on events:
 
 ```go
 type GuardedEvent interface {
     Event
-    Forbids(Command) bool
+    Forbids(Effect) bool
 }
 ```
 
-`ReFormatting.Forbids(ReFormat)` returns true. The engine, after each processor chain returns, checks `batch.Event` for `GuardedEvent` and walks `batch.Commands`: any forbidden command is dropped with a log line. The bug isn't silent (the log makes it visible) but it doesn't loop.
+`ReFormatting.Forbids(ReFormat)` returns true. The engine, after each processor chain returns, checks `batch.Event` for `GuardedEvent` and walks `batch.Effects`: any forbidden effect is dropped with a log line. The bug isn't silent (the log makes it visible) but it doesn't loop.
 
 A buggy processor doesn't take the session down — drop+log beats panic. If a class of cycle becomes recurring, the specific rule can escalate to a hard error later.
 
@@ -84,7 +84,7 @@ Most events implement nothing extra. `GuardedEvent` is the exception, not the no
 
 TunnelVision is the first feature built on the foundations:
 
-1. On a live `connection.TextLine`, classify; attack and modifier lines accumulate in the processor's struct (cross-batch state) and the trigger event is nilled out; any other classification ends the run and a `ui.PrintLine` carrying the consolidated summary is appended to the batch's commands, so it lands in scrollback just before whatever line ended the run. `connection.Prompt` is also a flush trigger; interleaved GMCP frames (typical during a flurry) intentionally are not.
+1. On a live `connection.TextLine`, classify; attack and modifier lines accumulate in the processor's struct (cross-batch state) and the trigger event is nilled out; any other classification ends the run and a `ui.PrintLine` carrying the consolidated summary is appended to the batch's effects, so it lands in scrollback just before whatever line ended the run. `connection.Prompt` is also a flush trigger; interleaved GMCP frames (typical during a flurry) intentionally are not.
 2. On toggle, emit `ui.ReFormat{}` — *not yet wired*; no toggle UX exists.
 3. On `ui.ReFormatting{Line}`, reuse the same classifier; emit `ui.PrintLine{Line{Raw, Formatted, ID}}` with the new formatting and the same ID — *not yet implemented for TunnelVision*.
 

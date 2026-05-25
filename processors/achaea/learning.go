@@ -46,6 +46,16 @@ var (
 //
 // Begin and continue lines are suppressed; finish lines are replaced with
 // a progress summary that includes a remaining-time estimate.
+//
+// Known concurrency hazard: armTimer schedules reset on a time.AfterFunc
+// goroutine, while the chain's own goroutine reads and writes the same
+// fields (total, remaining, target, start, timer). A 15-second timeout
+// firing exactly as a TextLine arrives can corrupt state — the visible
+// symptom is a stale progress line or a missing next chunk. The fix is
+// to route the timeout through the chain (e.g. a clock-driven
+// LearningTimeout event the processor handles like any other trigger),
+// not papering over with a mutex. See processors/generic/heartbeat.go
+// for the clock-driven shape.
 type Learning struct {
 	total     int
 	remaining int
@@ -57,9 +67,9 @@ type Learning struct {
 // Processor returns the Learning processor.
 func (lrn *Learning) Processor() app.Processor {
 	return func(batch app.Batch) (app.Batch, error) {
-		// 1. Intercept "learn N X from Y" Send commands.
-		for i, cmd := range batch.Commands {
-			send, ok := cmd.(connection.Send)
+		// 1. Intercept "learn N X from Y" Send effects.
+		for i, eff := range batch.Effects {
+			send, ok := eff.(connection.Send)
 			if !ok {
 				continue
 			}
@@ -80,7 +90,7 @@ func (lrn *Learning) Processor() app.Processor {
 			lrn.target = caps[1]
 			lrn.armTimer()
 
-			batch.Commands[i] = connection.Send{Bytes: lrn.nextChunk()}
+			batch.Effects[i] = connection.Send{Bytes: lrn.nextChunk()}
 		}
 
 		// 2. If a session isn't active, leave the server event alone.
@@ -119,7 +129,7 @@ func (lrn *Learning) Processor() app.Processor {
 				return batch, nil
 			}
 
-			batch = batch.AppendCommand(connection.Send{Bytes: lrn.nextChunk()})
+			batch = batch.AppendEffect(connection.Send{Bytes: lrn.nextChunk()})
 			batch.Event = connection.TextLine{Bytes: lrn.progressLine()}
 			lrn.start = time.Now()
 			lrn.armTimer()

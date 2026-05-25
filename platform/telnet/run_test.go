@@ -101,6 +101,64 @@ func TestRun_MultiLinePromptSplitsOnCRLF(t *testing.T) {
 	assert.Equal(t, "h:550 m:500 ex-", string(prompts[0].Bytes))
 }
 
+func TestApply_EmitsSentForSend(t *testing.T) {
+	conn := NewMockConn(nil)
+	nvt := telnet.NewNVT(conn)
+
+	events, err := nvt.Apply(connection.Send{Bytes: []byte("kick rat")})
+	require.NoError(t, err)
+	assert.Equal(t, "kick rat\r\n", string(conn.Written))
+
+	require.Len(t, events, 1)
+	sent, ok := events[0].(connection.Sent)
+	require.True(t, ok, "expected connection.Sent, got %T", events[0])
+
+	send, ok := sent.Effect.(connection.Send)
+	require.True(t, ok, "expected Sent.Effect to be connection.Send, got %T", sent.Effect)
+	assert.Equal(t, []byte("kick rat"), send.Bytes)
+}
+
+func TestApply_EmitsSentForSendGMCP(t *testing.T) {
+	conn := NewMockConn(nil)
+	nvt := telnet.NewNVT(conn)
+
+	events, err := nvt.Apply(connection.SendGMCP{Payload: []byte("Core.Ping")})
+	require.NoError(t, err)
+	// Wire bytes wrap the payload in IAC SB GMCP ... IAC SE.
+	assert.Equal(t,
+		[]byte{telnet.IAC, telnet.SB, telnet.GMCP, 'C', 'o', 'r', 'e', '.', 'P', 'i', 'n', 'g', telnet.IAC, telnet.SE},
+		conn.Written,
+	)
+
+	require.Len(t, events, 1)
+	sent, ok := events[0].(connection.Sent)
+	require.True(t, ok, "expected connection.Sent, got %T", events[0])
+
+	sg, ok := sent.Effect.(connection.SendGMCP)
+	require.True(t, ok, "expected Sent.Effect to be connection.SendGMCP, got %T", sent.Effect)
+	assert.Equal(t, []byte("Core.Ping"), sg.Payload)
+}
+
+func TestApply_DisconnectClosesUnderlyingConn(t *testing.T) {
+	conn := NewMockConn(nil)
+	nvt := telnet.NewNVT(conn)
+
+	events, err := nvt.Apply(connection.Disconnect{})
+	require.NoError(t, err)
+	assert.Empty(t, events, "Disconnect emits no apply-consequence events")
+	assert.True(t, conn.Closed, "Disconnect must close the underlying conn")
+}
+
+func TestApply_DoesNotEmitSentOnWriteError(t *testing.T) {
+	conn := NewMockConn(nil)
+	conn.WriteErr = func([]byte) error { return assert.AnError }
+	nvt := telnet.NewNVT(conn)
+
+	events, err := nvt.Apply(connection.Send{Bytes: []byte("anything")})
+	require.Error(t, err)
+	assert.Empty(t, events, "Sent must not fire when the wire write failed")
+}
+
 func TestRun_DoubledCRLFAtStart(t *testing.T) {
 	// Achaea's welcome banner begins with \r\n and contains many empty
 	// lines. The splitter shouldn't drop them — empty lines are part of

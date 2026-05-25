@@ -137,7 +137,7 @@ func (tv *TunnelVision) flushInto(batch app.Batch) app.Batch {
 
 	bs := []byte(b.String())
 
-	return batch.AppendCommand(ui.PrintLine{
+	return batch.AppendEffect(ui.PrintLine{
 		Line: ui.Line{Raw: bs, Formatted: bs},
 	})
 }

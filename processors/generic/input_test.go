@@ -19,8 +19,8 @@ func TestInput_TranslatesUIInputToSend(t *testing.T) {
 
 	got, err := generic.Input()(batch)
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
-	assert.Equal(t, []byte("kick orc"), got.Commands[0].(connection.Send).Bytes)
+	require.Len(t, got.Effects, 1)
+	assert.Equal(t, []byte("kick orc"), got.Effects[0].(connection.Send).Bytes)
 }
 
 func TestInput_IgnoresOtherEvents(t *testing.T) {
@@ -30,12 +30,12 @@ func TestInput_IgnoresOtherEvents(t *testing.T) {
 
 	got, err := generic.Input()(batch)
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }
 
 func TestInput_NoEvent(t *testing.T) {
 	got, err := generic.Input()(app.Batch{})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 	assert.Empty(t, got.Events)
 }

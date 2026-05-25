@@ -3,9 +3,9 @@ package app
 // Batch is one unit of work flowing through the processor chain. Each
 // batch corresponds to a single triggering event; processors may read
 // that trigger, append derived events that will become their own batches
-// downstream, and append commands the engine will apply to endpoints.
+// downstream, and append effects the engine will apply to endpoints.
 //
-// Within a batch the engine applies all Commands (in order) before any
+// Within a batch the engine applies all Effects (in order) before any
 // derived Events are re-emitted, and derived Events are re-emitted in
 // order before any apply-consequence event from an endpoint is
 // processed. See Engine.Run for the loop that enforces this contract.
@@ -17,12 +17,12 @@ type Batch struct {
 	Event Event
 
 	// Events collects derived events that will be re-emitted as their
-	// own batches after this batch's commands have been applied.
+	// own batches after this batch's effects have been applied.
 	Events []Event
 
-	// Commands collects commands to dispatch to the endpoints when the
+	// Effects collects effects to dispatch to the endpoints when the
 	// chain has finished running.
-	Commands []Command
+	Effects []Effect
 }
 
 func (b Batch) AppendEvent(e Event) Batch {
@@ -31,8 +31,8 @@ func (b Batch) AppendEvent(e Event) Batch {
 	return b
 }
 
-func (b Batch) AppendCommand(c Command) Batch {
-	b.Commands = append(b.Commands, c)
+func (b Batch) AppendEffect(e Effect) Batch {
+	b.Effects = append(b.Effects, e)
 
 	return b
 }

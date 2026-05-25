@@ -10,7 +10,7 @@ import (
 // assigns Line.ID on first print. Reformatters echo the incoming ID back
 // so the UI overwrites the existing slot rather than appending.
 type PrintLine struct {
-	app.CommandMarker
+	app.EffectMarker
 	Line Line
 }
 
@@ -18,18 +18,18 @@ type PrintLine struct {
 // processor chain as ReFormatting events, giving processors a chance to
 // rewrite their formatting under whatever policy is now in effect.
 type ReFormat struct {
-	app.CommandMarker
+	app.EffectMarker
 }
 
 // SetHealth updates the primary health vital.
 type SetHealth struct {
-	app.CommandMarker
+	app.EffectMarker
 	Value, Max int
 }
 
 // SetMana updates the primary mana vital.
 type SetMana struct {
-	app.CommandMarker
+	app.EffectMarker
 	Value, Max int
 }
 
@@ -37,33 +37,33 @@ type SetMana struct {
 // AddVital is idempotent — emitting it every pass is fine; state is owned by
 // the emitter, not the UI.
 type AddVital struct {
-	app.CommandMarker
+	app.EffectMarker
 	Name       string
 	Value, Max int
 }
 
 // SetVital updates the values of an existing auxiliary vital.
 type SetVital struct {
-	app.CommandMarker
+	app.EffectMarker
 	Name       string
 	Value, Max int
 }
 
 // RemoveVital removes a named auxiliary vital.
 type RemoveVital struct {
-	app.CommandMarker
+	app.EffectMarker
 	Name string
 }
 
 // SetCharacter updates the character's identity fields.
 type SetCharacter struct {
-	app.CommandMarker
+	app.EffectMarker
 	Name, Title string
 }
 
 // SetTarget updates the current target. A nil Target clears the target.
 type SetTarget struct {
-	app.CommandMarker
+	app.EffectMarker
 	Target *Target
 }
 
@@ -72,16 +72,16 @@ type SetTarget struct {
 // (e.g. the minimap); world adapters pass it directly rather than
 // projecting through a slim snapshot.
 type SetRoom struct {
-	app.CommandMarker
+	app.EffectMarker
 	Room *navigation.Room
 }
 
 // MaskInput hides characters the user types (typical of password entry).
 type MaskInput struct {
-	app.CommandMarker
+	app.EffectMarker
 }
 
 // UnmaskInput restores normal echoing of typed characters.
 type UnmaskInput struct {
-	app.CommandMarker
+	app.EffectMarker
 }

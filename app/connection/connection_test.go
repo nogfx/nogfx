@@ -18,16 +18,18 @@ func TestEventsSatisfyAppEvent(t *testing.T) {
 		_ app.Event = connection.TelnetCommand{}
 		_ app.Event = connection.GMCPFrame{}
 		_ app.Event = connection.StateChanged{}
+		_ app.Event = connection.Sent{}
+		_ app.Event = connection.Message{}
 	)
 }
 
-// TestCommandsSatisfyAppCommand guards against accidentally dropping the
-// CommandMarker embed on a concrete command type.
-func TestCommandsSatisfyAppCommand(t *testing.T) {
+// TestEffectsSatisfyAppEffect guards against accidentally dropping the
+// EffectMarker embed on a concrete effect type.
+func TestEffectsSatisfyAppEffect(t *testing.T) {
 	var (
-		_ app.Command = connection.Send{}
-		_ app.Command = connection.Reconnect{}
-		_ app.Command = connection.Disconnect{}
+		_ app.Effect = connection.Send{}
+		_ app.Effect = connection.SendGMCP{}
+		_ app.Effect = connection.Disconnect{}
 	)
 }
 
@@ -37,7 +39,7 @@ func TestEventPayloads(t *testing.T) {
 	assert.True(t, connection.StateChanged{Connected: true}.Connected)
 }
 
-func TestSendCommand(t *testing.T) {
+func TestSendEffectCarriesBytes(t *testing.T) {
 	send := connection.Send{Bytes: []byte("kick orc")}
 	assert.Equal(t, []byte("kick orc"), send.Bytes)
 }

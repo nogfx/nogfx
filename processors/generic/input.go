@@ -6,13 +6,13 @@ import (
 	"github.com/nogfx/nogfx/app/ui"
 )
 
-// Input converts a ui.Input event into a connection.Send command. This is
+// Input converts a ui.Input event into a connection.Send effect. This is
 // the bridge that turns user-submitted lines into bytes the game server
 // receives; without it, keystrokes never make it onto the wire.
 //
 // Input runs early in the chain so subsequent processors
 // (SplitInputProcessor, RepeatInputProcessor, world-specific
-// alias/macro expansions) operate on Send commands rather than on the
+// alias/macro expansions) operate on Send effects rather than on the
 // raw ui.Input event.
 func Input() app.Processor {
 	return func(batch app.Batch) (app.Batch, error) {
@@ -21,6 +21,6 @@ func Input() app.Processor {
 			return batch, nil
 		}
 
-		return batch.AppendCommand(connection.Send{Bytes: inp.Bytes}), nil
+		return batch.AppendEffect(connection.Send{Bytes: inp.Bytes}), nil
 	}
 }

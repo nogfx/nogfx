@@ -26,7 +26,7 @@ func line(s string) connection.TextLine {
 func sendStrings(b app.Batch) []string {
 	var out []string
 
-	for _, c := range b.Commands {
+	for _, c := range b.Effects {
 		if s, ok := c.(connection.Send); ok {
 			out = append(out, string(s.Bytes))
 		}
@@ -51,7 +51,7 @@ func TestLearning_SmallAmountUntouched(t *testing.T) {
 	lrn := &achaea.Learning{}
 	p := lrn.Processor()
 
-	got, err := p(app.Batch{Commands: []app.Command{send("learn 5 swordsmanship from Galen")}})
+	got, err := p(app.Batch{Effects: []app.Effect{send("learn 5 swordsmanship from Galen")}})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"learn 5 swordsmanship from Galen"}, sendStrings(got),
 		"requests at or below maxLessons should not be chunked")
@@ -61,11 +61,11 @@ func TestLearning_LargeAmountSplitIntoFirstChunk(t *testing.T) {
 	lrn := &achaea.Learning{}
 	p := lrn.Processor()
 
-	got, err := p(app.Batch{Commands: []app.Command{send("learn 35 swordsmanship from Galen")}})
+	got, err := p(app.Batch{Effects: []app.Effect{send("learn 35 swordsmanship from Galen")}})
 	require.NoError(t, err)
-	require.Len(t, got.Commands, 1)
+	require.Len(t, got.Effects, 1)
 
-	first := string(got.Commands[0].(connection.Send).Bytes)
+	first := string(got.Effects[0].(connection.Send).Bytes)
 	assert.Equal(t, "learn 15 swordsmanship from Galen", first,
 		"the first chunk should be sized at maxLessons")
 }
@@ -75,7 +75,7 @@ func TestLearning_ChainsToCompletion(t *testing.T) {
 	p := lrn.Processor()
 
 	// User submits 25 lessons.
-	got, err := p(app.Batch{Commands: []app.Command{send("learn 25 swordsmanship from Galen")}})
+	got, err := p(app.Batch{Effects: []app.Effect{send("learn 25 swordsmanship from Galen")}})
 	require.NoError(t, err)
 	require.Equal(t, []string{"learn 15 swordsmanship from Galen"}, sendStrings(got))
 
@@ -124,7 +124,7 @@ func TestLearning_AlternativeFinishPatterns(t *testing.T) {
 	lrn := &achaea.Learning{}
 	p := lrn.Processor()
 
-	_, err := p(app.Batch{Commands: []app.Command{send("learn 20 inscription from Belluno")}})
+	_, err := p(app.Batch{Effects: []app.Effect{send("learn 20 inscription from Belluno")}})
 	require.NoError(t, err)
 
 	// The "bows to you - the lesson in X is over" variant should also
@@ -138,7 +138,7 @@ func TestLearning_NonNumericPrefixPassesThrough(t *testing.T) {
 	lrn := &achaea.Learning{}
 	p := lrn.Processor()
 
-	got, err := p(app.Batch{Commands: []app.Command{send("learn x from Galen")}})
+	got, err := p(app.Batch{Effects: []app.Effect{send("learn x from Galen")}})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"learn x from Galen"}, sendStrings(got))
 }

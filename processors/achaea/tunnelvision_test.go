@@ -30,7 +30,7 @@ func runTV(t *testing.T, events ...connection.TextLine) []string {
 		got, err := chain(app.Batch{Event: ev})
 		require.NoError(t, err)
 
-		for _, c := range got.Commands {
+		for _, c := range got.Effects {
 			if pl, ok := c.(ui.PrintLine); ok {
 				out = append(out, string(pl.Line.Formatted))
 			}
@@ -142,7 +142,7 @@ func TestTunnelVision_FlushesAttackOnPrompt(t *testing.T) {
 		got, err := chain(app.Batch{Event: ev})
 		require.NoError(t, err)
 
-		for _, c := range got.Commands {
+		for _, c := range got.Effects {
 			if pl, ok := c.(ui.PrintLine); ok {
 				summaries = append(summaries, string(pl.Line.Formatted))
 			}
@@ -175,7 +175,7 @@ func TestTunnelVision_DoesNotFlushOnInterleavedGMCP(t *testing.T) {
 		got, err := chain(app.Batch{Event: ev})
 		require.NoError(t, err)
 
-		for _, c := range got.Commands {
+		for _, c := range got.Effects {
 			if pl, ok := c.(ui.PrintLine); ok {
 				out = append(out, string(pl.Line.Formatted))
 			}

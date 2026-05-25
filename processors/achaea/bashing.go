@@ -1,6 +1,8 @@
 package achaea
 
 import (
+	"bytes"
+
 	"github.com/nogfx/nogfx/app"
 	"github.com/nogfx/nogfx/app/connection"
 	"github.com/nogfx/nogfx/internal/simpex"
@@ -51,8 +53,8 @@ func (bsh *Bashing) Processor() app.Processor {
 	return func(batch app.Batch) (app.Batch, error) {
 		// 1. Expand "kill" inputs into the bash queue, unless the
 		// current target is another player.
-		for i, cmd := range batch.Commands {
-			send, ok := cmd.(connection.Send)
+		for i, eff := range batch.Effects {
+			send, ok := eff.(connection.Send)
 			if !ok {
 				continue
 			}
@@ -65,7 +67,7 @@ func (bsh *Bashing) Processor() app.Processor {
 				continue
 			}
 
-			batch.Commands[i] = connection.Send{Bytes: bashAttack}
+			batch.Effects[i] = connection.Send{Bytes: bashAttack}
 			bsh.active = true
 		}
 
@@ -104,7 +106,7 @@ func (bsh *Bashing) onSlain(batch app.Batch) app.Batch {
 	bsh.active = false
 	bsh.attacking = false
 	batch = dropMatching(batch, bashAttack)
-	batch = batch.AppendCommand(connection.Send{Bytes: bashClearEqbal})
+	batch = batch.AppendEffect(connection.Send{Bytes: bashClearEqbal})
 
 	return batch
 }
@@ -127,7 +129,7 @@ func (bsh *Bashing) onAttack(batch app.Batch) app.Batch {
 		batch = dropMatching(batch, bashAttack)
 	}
 
-	batch = batch.AppendCommand(connection.Send{Bytes: bashAttack})
+	batch = batch.AppendEffect(connection.Send{Bytes: bashAttack})
 	bsh.attacking = true
 
 	return batch
@@ -138,38 +140,24 @@ func (bsh *Bashing) onGold(batch app.Batch) app.Batch {
 		return batch
 	}
 
-	batch = batch.AppendCommand(connection.Send{Bytes: []byte("get sovereigns")})
-	batch = batch.AppendCommand(connection.Send{Bytes: []byte("put sovereigns in pack")})
+	batch = batch.AppendEffect(connection.Send{Bytes: []byte("get sovereigns")})
+	batch = batch.AppendEffect(connection.Send{Bytes: []byte("put sovereigns in pack")})
 
 	return batch
 }
 
-// dropMatching removes any connection.Send commands whose bytes equal data.
+// dropMatching removes any connection.Send effects whose bytes equal data.
 func dropMatching(batch app.Batch, data []byte) app.Batch {
-	out := batch.Commands[:0]
-	for _, c := range batch.Commands {
-		if s, ok := c.(connection.Send); ok && bytesEqual(s.Bytes, data) {
+	out := batch.Effects[:0]
+	for _, c := range batch.Effects {
+		if s, ok := c.(connection.Send); ok && bytes.Equal(s.Bytes, data) {
 			continue
 		}
 
 		out = append(out, c)
 	}
 
-	batch.Commands = out
+	batch.Effects = out
 
 	return batch
-}
-
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-
-	return true
 }

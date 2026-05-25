@@ -2,7 +2,7 @@ package app
 
 import "fmt"
 
-// Processor reads a Batch, optionally appends events and commands, and
+// Processor reads a Batch, optionally appends events and effects, and
 // returns the modified Batch. The same Processor signature is used for
 // every kind of work in the chain — generic, world-specific, user scripts.
 type Processor func(Batch) (Batch, error)

@@ -19,12 +19,12 @@ func runNeg(t *testing.T, proc app.Processor, ev app.Event) []byte {
 	got, err := proc(app.Batch{Event: ev})
 	require.NoError(t, err)
 
-	if len(got.Commands) == 0 {
+	if len(got.Effects) == 0 {
 		return nil
 	}
 
-	require.Len(t, got.Commands, 1)
-	send, ok := got.Commands[0].(connection.Send)
+	require.Len(t, got.Effects, 1)
+	send, ok := got.Effects[0].(connection.Send)
 	require.True(t, ok)
 
 	return send.Bytes
@@ -128,7 +128,7 @@ func TestNegotiation_IgnoresGMCPFrame(t *testing.T) {
 		Payload: []byte("Char.Vitals {}"),
 	}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }
 
 func TestNegotiation_IgnoresNonTelnetEvents(t *testing.T) {
@@ -136,5 +136,5 @@ func TestNegotiation_IgnoresNonTelnetEvents(t *testing.T) {
 
 	got, err := proc(app.Batch{Event: connection.TextLine{Bytes: []byte("ignored")}})
 	require.NoError(t, err)
-	assert.Empty(t, got.Commands)
+	assert.Empty(t, got.Effects)
 }

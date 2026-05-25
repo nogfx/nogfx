@@ -8,27 +8,27 @@ import (
 	"github.com/nogfx/nogfx/app/connection"
 )
 
-// RepeatInputProcessor expands each connection.Send command whose bytes start
-// with a number-prefix (e.g. "3 kick") into that command repeated the given
+// RepeatInputProcessor expands each connection.Send effect whose bytes start
+// with a number-prefix (e.g. "3 kick") into that effect repeated the given
 // number of times.
 func RepeatInputProcessor() Processor {
 	return func(batch app.Batch) (app.Batch, error) {
-		if len(batch.Commands) == 0 {
+		if len(batch.Effects) == 0 {
 			return batch, nil
 		}
 
-		out := make([]app.Command, 0, len(batch.Commands))
-		for _, cmd := range batch.Commands {
-			send, ok := cmd.(connection.Send)
+		out := make([]app.Effect, 0, len(batch.Effects))
+		for _, eff := range batch.Effects {
+			send, ok := eff.(connection.Send)
 			if !ok {
-				out = append(out, cmd)
+				out = append(out, eff)
 
 				continue
 			}
 
 			n, rest, ok := splitRepeatPrefix(send.Bytes)
 			if !ok {
-				out = append(out, cmd)
+				out = append(out, eff)
 
 				continue
 			}
@@ -38,7 +38,7 @@ func RepeatInputProcessor() Processor {
 			}
 		}
 
-		batch.Commands = out
+		batch.Effects = out
 
 		return batch, nil
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 // Match is the result of a pattern successfully applied to a single event
-// or command in a batch. Index is the position of the matched item in the
+// or effect in a batch. Index is the position of the matched item in the
 // slice that was searched; Captures are the simpex captures.
 type Match struct {
 	Index    int
@@ -21,12 +21,12 @@ type Match struct {
 type Callback func(matches []Match, batch app.Batch) app.Batch
 
 // MatchInput matches the pattern against the bytes of every connection.Send
-// command currently in the batch. On match(es), the callback is invoked.
+// effect currently in the batch. On match(es), the callback is invoked.
 func MatchInput(pat string, cb Callback) Processor {
 	return MatchInputs([]string{pat}, cb)
 }
 
-// MatchInputs matches any of the patterns against connection.Send commands.
+// MatchInputs matches any of the patterns against connection.Send effects.
 func MatchInputs(pats []string, cb Callback) Processor {
 	pbs := patternBytes(pats)
 
@@ -35,8 +35,8 @@ func MatchInputs(pats []string, cb Callback) Processor {
 
 		var matches []Match
 
-		for i, cmd := range batch.Commands {
-			send, ok := cmd.(connection.Send)
+		for i, eff := range batch.Effects {
+			send, ok := eff.(connection.Send)
 			if !ok {
 				continue
 			}

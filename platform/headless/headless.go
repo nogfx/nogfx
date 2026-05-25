@@ -1,14 +1,14 @@
 // Package headless implements a non-interactive UI endpoint: input is read
-// from an io.Reader (typically stdin, one command per line) and ui.PrintLine
-// commands are written to an io.Writer (typically stdout). It exists so the
-// assistant can drive a session for protocol and feature investigation
-// without a tcell screen — see docs/agent/conduct.md for the operational
-// rules that apply when it is in use.
+// from an io.Reader (typically stdin, one MUD command per line) and
+// ui.PrintLine effects are written to an io.Writer (typically stdout). It
+// exists so the assistant can drive a session for protocol and feature
+// investigation without a tcell screen — see docs/agent/conduct.md for the
+// operational rules that apply when it is in use.
 //
 // The headless endpoint deliberately does not render vitals, the target, or
 // any other live-UI state; consumers that need that information should read
 // it from the always-on event log (see processors/generic.EventLogProcessor)
-// or by emitting their own probe commands.
+// or by sending their own probe commands.
 package headless
 
 import (
@@ -107,14 +107,16 @@ func (h *Headless) Run(ctx context.Context, events chan<- app.Event) error {
 }
 
 // Apply writes ui.PrintLine output to the configured writer and accepts the
-// remaining UI commands as no-ops so the engine doesn't log them as
-// unhandled. Commands targeting the connection endpoint return
-// ErrCommandNotApplicable so engine routing can fall through.
-func (h *Headless) Apply(cmd app.Command) error {
-	switch c := cmd.(type) {
+// remaining UI effects as no-ops so the engine doesn't log them as
+// unhandled. Effects targeting the connection endpoint return
+// app.ErrEffectNotApplicable so engine routing can fall through.
+// Headless emits no apply-consequence events, so the events slice is
+// always nil.
+func (h *Headless) Apply(eff app.Effect) ([]app.Event, error) {
+	switch c := eff.(type) {
 	case ui.PrintLine:
 		if h.out == nil {
-			return nil
+			return nil, nil
 		}
 
 		h.writeMu.Lock()
@@ -122,7 +124,7 @@ func (h *Headless) Apply(cmd app.Command) error {
 
 		_, err := fmt.Fprintln(h.out, string(c.Line.Formatted))
 
-		return err
+		return nil, err
 
 	case ui.ReFormat,
 		ui.SetHealth, ui.SetMana,
@@ -130,13 +132,13 @@ func (h *Headless) Apply(cmd app.Command) error {
 		ui.SetCharacter, ui.SetTarget, ui.SetRoom,
 		ui.MaskInput, ui.UnmaskInput:
 		// Accepted as no-ops: the headless endpoint doesn't render UI
-		// chrome, but each of these is a UI command — returning nil keeps
+		// chrome, but each of these is a UI effect — returning nil keeps
 		// the engine from logging them as unhandled. MaskInput in
 		// particular: stdin echo is the caller's concern (auto-login
 		// reads credentials from a file, not stdin).
-		return nil
+		return nil, nil
 
 	default:
-		return app.ErrCommandNotApplicable
+		return nil, app.ErrEffectNotApplicable
 	}
 }

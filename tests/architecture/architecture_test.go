@@ -26,13 +26,13 @@ const modulePath = "github.com/nogfx/nogfx"
 type Category string
 
 const (
-	// CategoryApp is the abstract pipeline core: Batch, Event, Command,
+	// CategoryApp is the abstract pipeline core: Batch, Event, Effect,
 	// Processor, Chain, Endpoint, Engine. Imports nothing else in the
 	// project.
 	CategoryApp Category = "app"
 
 	// CategoryContract is an endpoint contract: the events the endpoint
-	// emits and the commands it accepts. Lives under app/ as a
+	// emits and the effects it accepts. Lives under app/ as a
 	// subpackage so the contract sits next to the abstract core it
 	// implements.
 	CategoryContract Category = "contract"
@@ -74,7 +74,7 @@ func classify(importPath string) Category {
 	switch {
 	case rel == "app":
 		return CategoryApp
-	case rel == "app/connection", rel == "app/ui":
+	case rel == "app/connection", rel == "app/ui", rel == "app/clock":
 		return CategoryContract
 	case strings.HasPrefix(rel, "internal/"):
 		return CategoryLib

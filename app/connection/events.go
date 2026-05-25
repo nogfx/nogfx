@@ -1,5 +1,5 @@
 // Package connection holds the contract for the network endpoint: the events
-// the connection emits and the commands it accepts. Concrete implementations
+// the connection emits and the effects it accepts. Concrete implementations
 // of the connection (e.g. telnet) live in platform/.
 package connection
 
@@ -37,6 +37,17 @@ type StateChanged struct {
 	app.EventMarker
 	Connected bool
 	Err       error
+}
+
+// Sent reports that a Send / SendGMCP effect was successfully written
+// to the wire by the Connection. Effect carries the original effect;
+// downstream tracking (processors/generic.Recorder) uses this as the
+// authoritative "we actually sent this" signal rather than reading
+// batch.Effects, which a later processor could mutate before Apply
+// dispatches it.
+type Sent struct {
+	app.EventMarker
+	Effect app.Effect
 }
 
 // Message is one turn's worth of server output: every TextLine and

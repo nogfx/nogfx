@@ -19,7 +19,7 @@ type Credential struct {
 
 // AutoLogin returns a processor that authenticates via a GMCP Char.Login
 // frame. The processor watches for the server announcing GMCP support
-// (IAC WILL GMCP) and, on first occurrence, appends a SendGMCP command
+// (IAC WILL GMCP) and, on first occurrence, appends a SendGMCP effect
 // carrying the Char.Login JSON. The step is single-use: even if the
 // server later re-announces GMCP, the credentials are not re-sent.
 //
@@ -58,9 +58,10 @@ func AutoLogin(creds []Credential) app.Processor {
 
 		consumed = true
 
-		reply := make([]byte, len(payload))
-		copy(reply, payload)
-
-		return batch.AppendCommand(connection.SendGMCP{Payload: reply}), nil
+		// AutoLogin only fires once per session, so we could equally
+		// hand `payload` over directly, but a single send is single-use:
+		// the read-only contract on connection.SendGMCP.Payload means
+		// sharing the slice is fine either way.
+		return batch.AppendEffect(connection.SendGMCP{Payload: payload}), nil
 	}
 }

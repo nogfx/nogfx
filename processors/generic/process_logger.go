@@ -11,7 +11,7 @@ import (
 )
 
 // LogProcessor writes the textual contents of the batch (server output,
-// prompts, and outgoing send commands) to the given file path. The parent
+// prompts, and outgoing Send effects) to the given file path. The parent
 // directories are created if they don't already exist.
 func LogProcessor(dir, filename string) (Processor, error) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {

@@ -62,16 +62,16 @@ func TestHeadless_ApplyPrintLineWritesToOutput(t *testing.T) {
 	out := &bytes.Buffer{}
 	h := headless.NewWithIO(strings.NewReader(""), out)
 
-	err := h.Apply(ui.PrintLine{Line: ui.Line{Formatted: []byte("you see an orc")}})
+	_, err := h.Apply(ui.PrintLine{Line: ui.Line{Formatted: []byte("you see an orc")}})
 	require.NoError(t, err)
 
 	assert.Equal(t, "you see an orc\n", out.String())
 }
 
-func TestHeadless_ApplyAcceptsUICommandsAsNoOps(t *testing.T) {
+func TestHeadless_ApplyAcceptsUIEffectsAsNoOps(t *testing.T) {
 	h := headless.New()
 
-	cases := []app.Command{
+	cases := []app.Effect{
 		ui.ReFormat{},
 		ui.SetHealth{Value: 100, Max: 100},
 		ui.SetMana{Value: 100, Max: 100},
@@ -85,14 +85,15 @@ func TestHeadless_ApplyAcceptsUICommandsAsNoOps(t *testing.T) {
 		ui.UnmaskInput{},
 	}
 	for _, c := range cases {
-		assert.NoError(t, h.Apply(c), "expected %T to be accepted", c)
+		_, err := h.Apply(c)
+		assert.NoError(t, err, "expected %T to be accepted", c)
 	}
 }
 
-type notACommand struct{ app.CommandMarker }
+type notAnEffect struct{ app.EffectMarker }
 
-func TestHeadless_ApplyReturnsErrCommandNotApplicableForOthers(t *testing.T) {
+func TestHeadless_ApplyReturnsErrEffectNotApplicableForOthers(t *testing.T) {
 	h := headless.New()
-	err := h.Apply(notACommand{})
-	assert.ErrorIs(t, err, app.ErrCommandNotApplicable)
+	_, err := h.Apply(notAnEffect{})
+	assert.ErrorIs(t, err, app.ErrEffectNotApplicable)
 }

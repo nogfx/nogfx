@@ -2,6 +2,8 @@
 
 Records the package-layout and pipeline-model refactor that produced the current architecture described in [`overview.md`](overview.md). All steps below have landed; this file is preserved for the decision-trail and notes captured during the work. The "Status" lines reflect the final state; the "Notes" sections retain the design choices and surprises that shaped each step.
 
+> **Language note (post-migration):** the steps below refer to the engine-dispatch interface as `Command` / `CommandMarker` / `ErrCommandNotApplicable` / `batch.Commands` / `AppendCommand`. That was the original name; it has since been renamed to **Effect** (`Effect` / `EffectMarker` / `ErrEffectNotApplicable` / `batch.Effects` / `AppendEffect`) to free the word "command" for its MUD-domain meaning (a line of plain text a player types and sends to the server). The historical entries below are left in the original vocabulary so the decision-trail still reads as it landed; current code and [`overview.md`](overview.md) use the new names.
+
 ## Step 1 — Batch, Events, Commands, and processor rewrite
 
 **Status:** done (with Learning/TunnelVision/Bashing reimplementations tracked as separate follow-ups, see below)

@@ -76,7 +76,7 @@ func TestRepeatInputProcessor(t *testing.T) {
 
 			var batch app.Batch
 			for _, b := range tc.input {
-				batch = batch.AppendCommand(connection.Send{Bytes: b})
+				batch = batch.AppendEffect(connection.Send{Bytes: b})
 			}
 
 			out, err := proc(batch)
@@ -84,7 +84,7 @@ func TestRepeatInputProcessor(t *testing.T) {
 
 			var got [][]byte
 
-			for _, cmd := range out.Commands {
+			for _, cmd := range out.Effects {
 				send, ok := cmd.(connection.Send)
 				require.True(t, ok, "command should be a connection.Send, got %T", cmd)
 

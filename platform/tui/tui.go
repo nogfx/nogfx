@@ -216,10 +216,11 @@ func (tui *TUI) requestDraw() {
 	}
 }
 
-// Apply executes a single command against the UI. Commands not targeting
-// the UI return app.ErrCommandNotApplicable.
-func (tui *TUI) Apply(cmd app.Command) error {
-	switch c := cmd.(type) {
+// Apply executes a single effect against the UI. Effects not targeting
+// the UI return app.ErrEffectNotApplicable. The TUI emits no
+// apply-consequence events today, so the events slice is always nil.
+func (tui *TUI) Apply(eff app.Effect) ([]app.Event, error) {
+	switch c := eff.(type) {
 	case ui.PrintLine:
 		tui.output.AppendLine(c.Line)
 		tui.setCache(paneOutput, nil)
@@ -316,10 +317,10 @@ func (tui *TUI) Apply(cmd app.Command) error {
 		tui.requestDraw()
 
 	default:
-		return app.ErrCommandNotApplicable
+		return nil, app.ErrEffectNotApplicable
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Draw updates the terminal and prints the contents of the panes.

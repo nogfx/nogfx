@@ -100,6 +100,6 @@ func TelnetNegotiation(policy NegotiationPolicy) app.Processor {
 			return batch, nil
 		}
 
-		return batch.AppendCommand(connection.Send{Bytes: reply}), nil
+		return batch.AppendEffect(connection.Send{Bytes: reply}), nil
 	}
 }
