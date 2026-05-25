@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/nogfx/nogfx/app"
+	"github.com/nogfx/nogfx/platform/clock"
 	"github.com/nogfx/nogfx/platform/headless"
 	"github.com/nogfx/nogfx/platform/telnet"
 	"github.com/nogfx/nogfx/platform/tui"
@@ -133,7 +134,12 @@ func run(address string, headlessMode bool) error {
 	eng := &app.Engine{
 		Connection: conn,
 		UI:         terminal,
-		Processor:  chain,
+		// A 1-second tick drives the KeepAlive processor's cadence check
+		// (and any future timer-driven processors). The Ticker is the
+		// engine's only emission-only source today; it never receives
+		// effects.
+		Sources:   []app.Endpoint{clock.NewTicker(time.Second)},
+		Processor: chain,
 	}
 
 	return eng.Run(ctx)
@@ -223,7 +229,29 @@ func buildChain(address string, headlessMode bool) (app.Processor, error) {
 	// the world's own GMCP-support announcement (Core.Supports.Set) is
 	// queued first; with both in the same batch, the engine applies them
 	// in order.
-	worldProcs = append(worldProcs, generic.AutoLogin(creds))
+	//
+	// KeepAlive (Core.KeepAlive, 30s) resets the server's idle timer so a
+	// short server-side timeout can surface a dead Internet connection
+	// quickly. Ping (Core.Ping, 10s) is the bidirectional lag probe.
+	// LagWatcher correlates these against the matching GMCPFrame replies
+	// (entirely self-contained — it doesn't go through the Tracker,
+	// because GMCP traffic isn't a MUD command in the domain sense).
+	//
+	// Tracker is the queue of in-flight MUD commands (text we sent to
+	// the server, plus any forced actions world-specific processors
+	// recognise). Recorder appends every connection.Sent whose Effect
+	// is a connection.Send (player text) into the queue; world-specific
+	// resolvers (none yet) consult and resolve against it. See
+	// docs/design/tracking.md.
+	tracker := generic.NewTracker()
+
+	worldProcs = append(worldProcs,
+		generic.AutoLogin(creds),
+		generic.KeepAlive(30*time.Second),
+		generic.Ping(10*time.Second),
+		generic.Recorder(tracker),
+		generic.LagWatcher(),
+	)
 
 	// User scripts go here once a loader exists. They sit between the
 	// world and the generic Output/log so that they see decoded events

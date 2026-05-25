@@ -1,7 +1,9 @@
-// Package processors holds generic processors that operate on app.Batch
-// values: the Input/Decode/Render baseline transformations, plus
-// world-agnostic utilities (SplitInputProcessor, RepeatInputProcessor,
-// LogProcessor, and the simpex-based MatchInput/MatchOutput helpers).
+// Package generic holds MUD-agnostic processors that operate on
+// app.Batch values: input/output translation, telnet-option negotiation,
+// turn aggregation, the heartbeat and lag-watching pair, the tracker
+// queue, and assorted utilities (SplitInputProcessor, RepeatInputProcessor,
+// LogProcessor, EventLogProcessor, the simpex-based MatchInput /
+// MatchOutput helpers).
 //
 // Worlds compose these alongside their own processors when assembling
 // their chain.
