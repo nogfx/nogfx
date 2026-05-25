@@ -30,4 +30,5 @@ var (
 	IACWillEcho = []byte{IAC, Will, Echo}
 	IACWontEcho = []byte{IAC, Wont, Echo}
 	IACWillGMCP = []byte{IAC, Will, GMCP}
+	IACDoGMCP   = []byte{IAC, Do, GMCP}
 )

@@ -18,18 +18,34 @@ const (
 	mainSideMinWidth = mainMinWidth + borderWidth + sideMinWidth
 	mainSideMaxWidth = mainMinWidth + borderWidth + (mainMaxWidth-mainMinWidth)*2
 
-	paneInput  = "input"
-	paneMain   = "main"
-	paneMap    = "map"
-	paneOutput = "output"
-	paneScreen = "screen"
-	paneSide   = "side"
-	paneTarget = "target"
-	paneVitals = "vitals"
+	// lagWidth is the fixed width of the lag-indicator widget that sits at
+	// the right of the input row. Eight cells fits the widest formatLag
+	// output (sub-second values cap at "999ms"; >=1s renders as "1.5s")
+	// right-aligned with a one-cell trailing gap, and leaves the input
+	// field with the bulk of the main pane's width.
+	lagWidth = 8
+
+	paneInput       = "input"
+	paneInputGutter = "input-gutter"
+	paneLag         = "lag"
+	paneMain        = "main"
+	paneMap         = "map"
+	paneOutput      = "output"
+	paneScreen      = "screen"
+	paneSide        = "side"
+	paneTarget      = "target"
+	paneVitals      = "vitals"
 )
 
+// Paint order matters. The trio at the start is layered front-to-back:
+// the input field paints its (reduced-width) row first, the gutter fills
+// the right margin so multi-row input doesn't expose stale cells, and
+// the lag widget overpaints the bottom-row corner. Everything after is
+// independent.
 var paneNames = []string{
 	paneInput,
+	paneInputGutter,
+	paneLag,
 	paneMain,
 	paneMap,
 	paneOutput,
@@ -77,6 +93,12 @@ func (l *Layout) pane(name string) pane {
 	case paneInput:
 		return l.inputPane()
 
+	case paneInputGutter:
+		return l.inputGutterPane()
+
+	case paneLag:
+		return l.lagPane()
+
 	case paneMain:
 		return l.mainPane()
 
@@ -114,12 +136,70 @@ func (l *Layout) inputPane() pane {
 	// Split half remaining with output, rounding down to yield presedence.
 	maxHeight := (main.height - target.height - vitalsHeight) / 2
 
-	rows, cx, cy := l.tui.RenderInput(main.width, maxHeight)
+	// Reserve the rightmost lagWidth cells of the input row for the lag
+	// widget. The lag pane paints on the same y as the input's last row,
+	// just shifted right; reducing the input width here is what keeps the
+	// two from colliding on the bottom row, and on multi-row input it
+	// keeps the right edge of every wrapped row clear (the lag widget
+	// itself is one row tall, painted on the bottom row only).
+	inputWidth := main.width - lagWidth
+	if inputWidth < 1 {
+		inputWidth = main.width
+	}
+
+	rows, cx, cy := l.tui.RenderInput(inputWidth, maxHeight)
 
 	x := main.x
 	y := main.y + main.height - len(rows) - target.height
 
 	l.tui.cursorpos = []int{x + cx, y + cy}
+
+	return newpane(rows, x, y)
+}
+
+func (l *Layout) lagPane() pane {
+	main := l.pane(paneMain)
+	input := l.pane(paneInput)
+
+	// The lag widget only makes sense when there is an input row to sit
+	// beside, and only when the main pane is wide enough to spare its
+	// reserved cells.
+	if input.height == 0 || main.width <= lagWidth {
+		return pane{}
+	}
+
+	row := l.tui.RenderLag(lagWidth)
+	if len(row) == 0 {
+		return pane{}
+	}
+
+	x := main.x + main.width - lagWidth
+	y := input.y + input.height - 1
+
+	return newpane(Rows{row}, x, y)
+}
+
+// inputGutterPane fills the lagWidth-cell strip to the right of the
+// input field across every input row. Without it, when input wraps to
+// multiple rows the rightmost cells of the upper rows are painted by
+// no pane and retain whatever (typically scrolled output) sat there
+// before. The lag widget paints last and overlays the bottom row of
+// this gutter.
+func (l *Layout) inputGutterPane() pane {
+	main := l.pane(paneMain)
+	input := l.pane(paneInput)
+
+	if input.height == 0 || main.width <= lagWidth {
+		return pane{}
+	}
+
+	rows := l.tui.RenderInputGutter(lagWidth, input.height)
+	if len(rows) == 0 {
+		return pane{}
+	}
+
+	x := main.x + main.width - lagWidth
+	y := input.y
 
 	return newpane(rows, x, y)
 }

@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"time"
+
 	"github.com/nogfx/nogfx/app"
 	"github.com/nogfx/nogfx/internal/navigation"
 )
@@ -74,6 +76,16 @@ type SetTarget struct {
 type SetRoom struct {
 	app.EffectMarker
 	Room *navigation.Room
+}
+
+// SetLag updates the current measured round-trip latency to the server.
+// Producers (today: the LagWatcher processor) emit this whenever a new
+// measurement lands. A zero Lag means "no measurement yet" and renders
+// blank; the UI is otherwise idempotent — repeated emissions just refresh
+// the displayed value.
+type SetLag struct {
+	app.EffectMarker
+	Lag time.Duration
 }
 
 // MaskInput hides characters the user types (typical of password entry).

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 
@@ -51,6 +52,13 @@ type TUI struct {
 
 	target *ui.Target
 	room   *navigation.Room
+
+	// lag is the latest measured round-trip latency. Apply writes from
+	// the engine goroutine; RenderLag reads from the UI goroutine. The
+	// value is a single int64 underneath, but lagMu keeps the race
+	// detector quiet and matches the vitals locking pattern above.
+	lagMu sync.Mutex
+	lag   time.Duration
 
 	running bool
 }
@@ -304,6 +312,16 @@ func (tui *TUI) Apply(eff app.Effect) ([]app.Event, error) {
 	case ui.SetRoom:
 		tui.room = c.Room
 		tui.setCache(paneMap, nil)
+		tui.requestDraw()
+
+	case ui.SetLag:
+		// Hold lagMu around both the state write and the cache clear
+		// so RenderLag can't repopulate the cache with the previous
+		// value between them. See RenderLag for the matching pattern.
+		tui.lagMu.Lock()
+		tui.lag = c.Lag
+		tui.setCache(paneLag, nil)
+		tui.lagMu.Unlock()
 		tui.requestDraw()
 
 	case ui.MaskInput:

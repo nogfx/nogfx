@@ -81,6 +81,7 @@ func TestHeadless_ApplyAcceptsUIEffectsAsNoOps(t *testing.T) {
 		ui.SetCharacter{Name: "x", Title: "y"},
 		ui.SetTarget{Target: nil},
 		ui.SetRoom{Room: nil},
+		ui.SetLag{Lag: 42},
 		ui.MaskInput{},
 		ui.UnmaskInput{},
 	}

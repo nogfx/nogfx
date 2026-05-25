@@ -105,7 +105,7 @@ func (u *fakeUI) Apply(eff app.Effect) ([]app.Event, error) {
 	case ui.PrintLine, ui.ReFormat,
 		ui.SetHealth, ui.SetMana, ui.AddVital, ui.SetVital,
 		ui.RemoveVital, ui.SetCharacter, ui.SetTarget, ui.SetRoom,
-		ui.MaskInput, ui.UnmaskInput:
+		ui.SetLag, ui.MaskInput, ui.UnmaskInput:
 		u.mu.Lock()
 		u.applied = append(u.applied, eff)
 		u.mu.Unlock()

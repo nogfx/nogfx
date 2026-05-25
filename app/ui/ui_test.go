@@ -34,6 +34,7 @@ func TestEffectsSatisfyAppEffect(t *testing.T) {
 		_ app.Effect = ui.SetCharacter{}
 		_ app.Effect = ui.SetTarget{}
 		_ app.Effect = ui.SetRoom{}
+		_ app.Effect = ui.SetLag{}
 		_ app.Effect = ui.MaskInput{}
 		_ app.Effect = ui.UnmaskInput{}
 	)

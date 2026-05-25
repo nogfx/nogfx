@@ -6,6 +6,43 @@ import (
 
 const nbsp = '\u00A0' // Non-breaking space.
 
+// inputStyle is the grey-on-white style applied to the input field and
+// its right-margin gutter. It dims after the user has typed (matching
+// the existing inputted-attribute behaviour on the field) so the whole
+// bottom strip reads as one visual unit regardless of state.
+func (tui *TUI) inputStyle() tcell.Style {
+	style := (tcell.Style{}).
+		Foreground(tcell.ColorWhite).
+		Background(tcell.Color235)
+
+	if tui.input.inputted {
+		style = style.Attributes(tcell.AttrDim)
+	}
+
+	return style
+}
+
+// RenderInputGutter returns the grey strip that fills the cells to the
+// right of the input field across every input row. The lag widget
+// overpaints the bottom row; everything above it stays a continuous
+// grey background so multi-row input doesn't expose stale output
+// content in the rightmost cells. width is the gutter width (typically
+// lagWidth) and height is the input pane's height.
+func (tui *TUI) RenderInputGutter(width, height int) Rows {
+	if width <= 0 || height <= 0 {
+		return nil
+	}
+
+	cell := NewCell(' ', tui.inputStyle())
+
+	rows := make(Rows, height)
+	for i := range rows {
+		rows[i] = NewRow(width, cell)
+	}
+
+	return rows
+}
+
 // MaskInput hides the content of the InputPane.
 func (tui *TUI) MaskInput() {
 	tui.input.buffer = []rune{}

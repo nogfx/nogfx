@@ -130,6 +130,7 @@ func (h *Headless) Apply(eff app.Effect) ([]app.Event, error) {
 		ui.SetHealth, ui.SetMana,
 		ui.AddVital, ui.SetVital, ui.RemoveVital,
 		ui.SetCharacter, ui.SetTarget, ui.SetRoom,
+		ui.SetLag,
 		ui.MaskInput, ui.UnmaskInput:
 		// Accepted as no-ops: the headless endpoint doesn't render UI
 		// chrome, but each of these is a UI effect — returning nil keeps
